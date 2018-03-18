@@ -18,8 +18,7 @@ getWord = do c <- getChar
                        return (c:w)
 
 message :: Float -> Float -> String
-message weight height ..
-
+message weight height
     | val < 18    = "underweight"
     | val < 25    = "normal weight"
     | val < 30    = "overweight"

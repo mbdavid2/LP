@@ -40,8 +40,6 @@ breadthFirstList [] = []
 breadthFirstList (Empty:l) = breadthFirstList l
 breadthFirstList ((Node x left right):l) = x:(breadthFirstList (l++(left:[right])))
 
--- build :: Eq a => [a] -> [a] -> Tree
-
 overlap :: (a -> a -> a) -> Tree a -> Tree a -> Tree a
 overlap f Empty Empty = Empty
 overlap f a Empty = a

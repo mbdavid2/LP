@@ -32,6 +32,24 @@ inOrder :: Tree a -> [a]
 inOrder Empty = []
 inOrder (Node a left right) = (inOrder left)++(a:(inOrder right))
 
+build :: Eq a => [a] -> [a] -> Tree a
+build [] [] = Empty -- both lists will always have the same size
+build (p:preO) inO = (Node p leftTree rightTree)
+    where   leftInElems = (takeWhile (/= p) inO) -- All until p
+            leftPreElems = auxElemLists preO leftInElems
+            leftTree = build leftPreElems leftInElems
+
+            rightInElems = tail $ (dropWhile (/= p) inO) -- The rest minus p
+            rightPreElems = auxElemLists preO rightInElems
+            rightTree = build rightPreElems rightInElems
+
+auxElemLists :: Eq a => [a] -> [a] -> [a]
+auxElemLists [] l2 = []
+auxElemLists (a:l1) l2
+    | elem a l2 = a:(auxElemLists l1 l2)
+    | otherwise = (auxElemLists l1 l2)
+
+
 breadthFirst :: Tree a -> [a]
 breadthFirst x = breadthFirstList [x]
 

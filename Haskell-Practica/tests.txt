@@ -1,0 +1,28 @@
+Term1:
+
+    let c1 = ((LET "x" (Num 5) (Func "+" [Var "y", Var "x"])))
+
+    let cc = Func "+" [Var "y", c1]
+
+    let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+
+    let eaa = ITE e22 cc c1
+
+Term2:
+
+    let qewq = ((LET "qqq" (Var "y") (Func "+" [Var "qqq", Var "x"])))
+
+    let c1B = LET "x" (Num 5) qewq
+
+    let ccB = Func "+" [Var "y", c1B]
+
+    let e22B = LET "q" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "q"])
+
+    let eaaB = ITE e22B ccB c1B
+
+Result:
+
+eaaB == eaa True
+
+*Main> finalTerm eaa
+ITE (Func "Cons" [Var "x",Func "Append" [Var "l1",Var "l2"]]) (Func "+" [Var "y",Func "+" [Var "y",Num 5]]) (Func "+" [Var "y",Num 5])

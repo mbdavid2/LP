@@ -56,4 +56,17 @@ performLET (LET str term1 term2) = replace [(str, term1)] term2
 
 -------------- 4. Match --------------
 
--- match::Term -> Term -> Maybe [(String,Term)]
+match :: Term -> Term -> Maybe [(String,Term)]
+match (Var a) (Var b) = Just [(a, (Var b))]
+match (Func a1 listT1) (Func a2 listT2)
+    | a1 == a2 && (length listT1) == (length listT2) = matchAux listT1 listT2 
+
+
+
+
+
+match _ _ = Nothing
+
+
+
+

@@ -29,11 +29,11 @@ ITE (Func "Cons" [Var "x",Func "Append" [Var "l1",Var "l2"]]) (Func "+" [Var "y"
 
 ////////////////////////////////////////////////////////////////////////////////
 
-e11 = Func "Append" [Func "Empty" [],Var "l"]
-e12 = Var "l"
-e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
-e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
-prog1 = Prog [[(e11,e12),(e21,e22)]]
+let e11 = Func "Append" [Func "Empty" [],Var "l"]
+let e12 = Var "l"
+let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+let prog1 = Prog [[(e11,e12),(e21,e22)]]
 
 
 
@@ -41,3 +41,18 @@ prog1 = Prog [[(e11,e12),(e21,e22)]]
 
 let m1 = (Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"])
 let m2 = (Func "Append" [Func "Cons" [Num 3, Func "Empty" []], Func "Empty" []])
+Expected: Just [("x",Num 3),("l1",Func "Empty" []),("l2",Func "Empty" [])]
+
+let n1 = (Func "Paquito" [(Func "Cons" [(Var "x"), (Var "l1")]), (Var "l2")])
+let n2 = (Func "Append" [(Func "Cons" [(Num 3), (Func "Empty" [])]), (Func "Empty" [])])
+Expected: Nothing
+
+
+////////////////////////////////ONESTEP//////////////////////////////////////
+
+let eLET = Func "Append" [Func "Cons" [LET "x" (Num 3) (Func "+" [Var "x", (Num 5)]), Func "Empty" []], Func "Empty" []]
+
+
+let e24 = Func "Append" [Func "Cons" [Func "+" [(Num 3), (Num 5)], Func "Empty" []], Func "Empty" []]
+
+oneStep (Prog [[]]) (Func "Append" [Func "Cons" [Func "+" [(Num 3), (Num 5)], Func "Empty" []], Func "Empty" []])

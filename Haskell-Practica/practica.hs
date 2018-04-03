@@ -48,7 +48,7 @@ finalTerm (Func a listT) = Func a (map finalTerm listT)
 finalTerm (ITE t1 t2 t3) = ITE (finalTerm t1) (finalTerm t2) (finalTerm t3)
 finalTerm basicTerm = basicTerm
 
--- Aplica LETs
+-- Aplica un LET i retorna el terme resultant
 performLET :: Term -> Term
 performLET (LET str term1 ((LET strB term1B term2B))) = replace [(str, term1)] insideTerm
     where insideTerm = replace [(strB, term1B)] term2B
@@ -67,6 +67,45 @@ match _ _ = Nothing
 
 -- Aixo no representa que es pot fer amb el >>= ? en plan aplica la funcio ++ a cada element
 -- Hauria de ser >>= amb zipWith/map/foldl?¿?¿
+-- >>= es nomes amb un element! jo vull desempaquetar 2 elements, fer f a b, i empaquetar el resultat
 concatMaybe :: Maybe [(String,Term)] -> Maybe [(String,Term)] -> Maybe [(String,Term)]
 concatMaybe (Just list1) (Just list2) = return (list1 ++ list2)
 concatMaybe _ _ = Just []
+
+-------------- 5. OneStep --------------
+
+oneStep :: Program Term -> Term -> Term
+
+-- Numeros
+oneStep p (Func a [(Num x), (Num y)])
+    | a == "+"              = Num (x+y)
+    | a == "-"              = Num (x-y)
+    | a == "*"              = Num (x*y)
+    | a == "==" && x == y   = Func "True" []
+    | a == "==" && x /= y   = Func "False" []
+    | a == ">"  && x > y    = Func "True" []
+    | a == ">"  && x <= y   = Func "False" []
+
+-- Logic
+oneStep p (Func "not" [(Func bool []), _ ])
+    | bool == "False"  = Func "True" []
+    | bool == "True"   = Func "False" []
+
+-- nomes un dels dos¿?¿ :/
+-- oneStep p (Func op [(Func bool []), _ ])
+--     | op == "and" && bool == "True" =
+--     | op == "or"                    =
+
+-- Aixo es aixi? termA termB molt general hauria de ser un cas concret per ser "l'interior" del tot
+oneStep p (ITE ifBool termA termB)
+    | ifBool == (Func "True" [])    = termA
+    | ifBool == (Func "False" [])   = termB
+
+-- LET
+oneStep p (LET name term1 (Func f [t1, t2])) = performLET (LET name term1 (Func f [t1, t2]))
+
+oneStep p (Func a (x:listT)) = Func a ((oneStep p x):listT)
+
+
+-- oneStep p (LET str t1 t2) =
+-- oneStep p (ITE t1 t2 t3) =

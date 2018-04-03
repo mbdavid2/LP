@@ -26,3 +26,11 @@ eaaB == eaa True
 
 *Main> finalTerm eaa
 ITE (Func "Cons" [Var "x",Func "Append" [Var "l1",Var "l2"]]) (Func "+" [Var "y",Func "+" [Var "y",Num 5]]) (Func "+" [Var "y",Num 5])
+
+////////////////////////////////////////////////////////////////////////////////
+
+e11 = Func "Append" [Func "Empty" [],Var "l"]
+e12 = Var "l"
+e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+prog1 = Prog [[(e11,e12),(e21,e22)]]

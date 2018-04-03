@@ -57,16 +57,16 @@ performLET (LET str term1 term2) = replace [(str, term1)] term2
 -------------- 4. Match --------------
 
 match :: Term -> Term -> Maybe [(String,Term)]
-match (Var a) (Var b) = Just [(a, (Var b))]
+match (Var a) term = Just [(a, term)]
 match (Func a1 listT1) (Func a2 listT2)
-    | a1 == a2 && (length listT1) == (length listT2) = matchAux listT1 listT2 
-
-
-
-
-
+    | basic         = foldl concatMaybe (Just []) (zipWith match listT1 listT2)
+    | otherwise     = Nothing
+    where
+        basic = a1 == a2 && (length listT1) == (length listT2)
 match _ _ = Nothing
 
-
-
-
+-- Aixo no representa que es pot fer amb el >>= ? en plan aplica la funcio ++ a cada element
+-- Hauria de ser >>= amb zipWith/map/foldl?¿?¿
+concatMaybe :: Maybe [(String,Term)] -> Maybe [(String,Term)] -> Maybe [(String,Term)]
+concatMaybe (Just list1) (Just list2) = return (list1 ++ list2)
+concatMaybe _ _ = Just []

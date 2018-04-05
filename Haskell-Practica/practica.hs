@@ -72,6 +72,7 @@ concatMaybe _ _ = Just []
 -------------- 5. OneStep --------------
 
 oneStep :: Program Term -> Term -> Term
+
 -- Operacions
 oneStep p (Func a [(Num x), (Num y)])
     | a == "+"              = Num (x+y)
@@ -108,9 +109,27 @@ oneStep p (ITE ifBool termA termB)
 
 -- LET
 oneStep p (LET name term1 termInside)
-    | (LET name term1 termInside) /=  possibleOneStep   = possibleOneStep
-    | otherwise                                         = performLET (LET name term1 termInside)
-        where possibleOneStep = (oneStep p termInside) -- ha de retornar algo si no pot fer mes oneStep
+    | (show termInside) /=  (show possibleOneStep)  = (LET name term1 possibleOneStep)
+    | otherwise                                     = performLET (LET name term1 termInside)
+        where possibleOneStep = (oneStep p termInside)
 
-oneStep p (Func a (x:listT)) = Func a ((oneStep p x):listT)
-oneStep p (Func a [x]) = Func a [x]
+-- Si el primer de dins que es troba es Var/Num, ja no pot fer res més :(
+oneStep p (Func a ((Var v):listT)) = (Func a ((Var v):listT))
+oneStep p (Func a ((Num n):listT)) = (Func a ((Num n):listT))
+
+oneStep p (Func a (x:listT))
+    | (show (Func a (x:listT))) == (show (possibleOneStep)) = applyPossibleMatch possibleMatch (Func a (x:listT))
+    | otherwise                                             = possibleOneStep
+        where possibleOneStep = (Func a ((oneStep p x):listT))
+              possibleMatch = searchMatchProg p (Func a (x:listT))
+
+applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term
+applyPossibleMatch Nothing term = term
+applyPossibleMatch (Just list) term = replace list term
+
+searchMatchProg :: Program Term -> Term -> Maybe [(String,Term)]
+searchMatchProg (Prog [[]]) term = Nothing
+searchMatchProg (Prog ((((xA,xB)):restx):rest)) term
+    | possibleMatch == Nothing  = searchMatchProg (Prog (((restx):rest))) term
+    | otherwise                 = possibleMatch
+        where possibleMatch = match xA term

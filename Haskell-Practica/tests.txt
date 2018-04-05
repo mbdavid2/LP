@@ -64,3 +64,30 @@ Result: Func "Append" [Func "Cons" [Num 8,Func "Empty" []],Func "Empty" []]
 
 NOT:
 let e24 = Func "Append" [Func "not"[Func "False" [], Func "Empty" []], Func "Empty" []]
+
+
+let das = LET "x" (Num 3) (Func "+" [Var "x", (Num 5)])
+
+
+
+match:
+
+let exm1 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
+let exm2 = Func "Append" [Func "Cons" [Num 3, Func "Empty" []], Func "Empty" []]
+let prog1 = Prog [[(exm1,ne1),(exm2,ne1)]]
+
+
+oneStep definitiu:
+
+let e11 = Func "Append" [Func "Empty" [],Var "l"]
+let e12 = Var "l"
+let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+let prog1 = Prog [[(e11,e12),(e21,e22)]]
+
+let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
+let final = (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
+
+oneStep prog1 (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
+oneStep prog1 $ oneStep prog1 $ oneStep prog1 $ oneStep prog1 final

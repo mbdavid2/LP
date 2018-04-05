@@ -13,9 +13,6 @@ data Program a = Prog [[(a,a)]]
 data Term = Num Int | Var String | Func String [Term] | ITE Term Term Term | LET String Term Term
     deriving (Show, Read)
 
-{- LET: String Term1 Term2, les variables que apareixen al Term2 anomenades "string"
-han de ser reemplaçades pel term1 -}
-
 -------------- 2. Replace --------------
 
 replace :: [(String, Term)] -> Term -> Term
@@ -75,8 +72,7 @@ concatMaybe _ _ = Just []
 -------------- 5. OneStep --------------
 
 oneStep :: Program Term -> Term -> Term
-
--- Numeros
+-- Operacions
 oneStep p (Func a [(Num x), (Num y)])
     | a == "+"              = Num (x+y)
     | a == "-"              = Num (x-y)
@@ -86,26 +82,35 @@ oneStep p (Func a [(Num x), (Num y)])
     | a == ">"  && x > y    = Func "True" []
     | a == ">"  && x <= y   = Func "False" []
 
--- Logic
-oneStep p (Func "not" [(Func bool []), _ ])
+-- Logica
+oneStep p (Func "not" ((Func bool []):funcList))
     | bool == "False"  = Func "True" []
     | bool == "True"   = Func "False" []
 
--- nomes un dels dos¿?¿ :/
--- oneStep p (Func op [(Func bool []), _ ])
---     | op == "and" && bool == "True" =
---     | op == "or"                    =
+oneStep p (Func "and" [a, b])
+    | a == Func "True"  []   = b
+    | a == Func "False" []   = Func "False" []
+    | b == Func "True"  []   = a
+    | b == Func "False" []   = Func "False" []
 
--- Aixo es aixi? termA termB molt general hauria de ser un cas concret per ser "l'interior" del tot
+oneStep p (Func "or" [a, b])
+    | a == Func "True"  []   = Func "True" []
+    | a == Func "False" []   = b
+    | b == Func "True"  []   = Func "True" []
+    | b == Func "False" []   = a
+
+-- ITE
 oneStep p (ITE ifBool termA termB)
+    | (ITE ifBool termA termB)      /= possibleOneStep = possibleOneStep
     | ifBool == (Func "True" [])    = termA
     | ifBool == (Func "False" [])   = termB
+        where possibleOneStep = (oneStep p termA)
 
 -- LET
-oneStep p (LET name term1 (Func f [t1, t2])) = performLET (LET name term1 (Func f [t1, t2]))
+oneStep p (LET name term1 termInside)
+    | (LET name term1 termInside) /=  possibleOneStep   = possibleOneStep
+    | otherwise                                         = performLET (LET name term1 termInside)
+        where possibleOneStep = (oneStep p termInside) -- ha de retornar algo si no pot fer mes oneStep
 
 oneStep p (Func a (x:listT)) = Func a ((oneStep p x):listT)
-
-
--- oneStep p (LET str t1 t2) =
--- oneStep p (ITE t1 t2 t3) =
+oneStep p (Func a [x]) = Func a [x]

@@ -54,5 +54,13 @@ let eLET = Func "Append" [Func "Cons" [LET "x" (Num 3) (Func "+" [Var "x", (Num 
 
 
 let e24 = Func "Append" [Func "Cons" [Func "+" [(Num 3), (Num 5)], Func "Empty" []], Func "Empty" []]
-
 oneStep (Prog [[]]) (Func "Append" [Func "Cons" [Func "+" [(Num 3), (Num 5)], Func "Empty" []], Func "Empty" []])
+
+
+SUMA:
+let e24 = Func "Append" [Func "Cons" [Func "+" [(Num 3), (Num 5)], Func "Empty" []], Func "Empty" []]
+*Main> oneStep (Prog [[]]) e24
+Result: Func "Append" [Func "Cons" [Num 8,Func "Empty" []],Func "Empty" []]
+
+NOT:
+let e24 = Func "Append" [Func "not"[Func "False" [], Func "Empty" []], Func "Empty" []]

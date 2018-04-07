@@ -19,6 +19,9 @@ replace :: [(String, Term)] -> Term -> Term
 replace subList (Var str) = findStringAndReplace (str,(Var str)) subList
 replace subList (Func a [x]) = Func a [(replace subList x)]
 replace subList (Func a args) = Func a (map (replace subList) args)
+replace subList (LET str t1 t2) = (LET str replacedt1 replacedt2)
+    where replacedt1 = replace subList t1
+          replacedt2 = replace subList t2
 replace subList term = term
 
 -- Rep l'string de la variable i el terme original
@@ -55,6 +58,7 @@ performLET (LET str term1 term2) = replace [(str, term1)] term2
 
 match :: Term -> Term -> Maybe [(String,Term)]
 match (Var a) term = Just [(a, term)]
+match term (Var a) = Just [(a, term)]
 match (Func a1 listT1) (Func a2 listT2)
     | basic         = foldl concatMaybe (Just []) (zipWith match listT1 listT2)
     | otherwise     = Nothing
@@ -67,7 +71,9 @@ match _ _ = Nothing
 -- >>= es nomes amb un element! jo vull desempaquetar 2 elements, fer f a b, i empaquetar el resultat
 concatMaybe :: Maybe [(String,Term)] -> Maybe [(String,Term)] -> Maybe [(String,Term)]
 concatMaybe (Just list1) (Just list2) = return (list1 ++ list2)
-concatMaybe _ _ = Just []
+concatMaybe Nothing Nothing = Nothing
+concatMaybe (Just list) Nothing = (Just list)
+concatMaybe Nothing (Just list) = (Just list)
 
 -------------- 5. OneStep --------------
 
@@ -105,7 +111,7 @@ oneStep p (ITE ifBool termA termB)
     | (ITE ifBool termA termB)      /= possibleOneStep = possibleOneStep
     | ifBool == (Func "True" [])    = termA
     | ifBool == (Func "False" [])   = termB
-        where possibleOneStep = (oneStep p termA)
+        where possibleOneStep = (oneStep p ifBool)
 
 -- LET
 oneStep p (LET name term1 termInside)
@@ -118,18 +124,18 @@ oneStep p (Func a ((Var v):listT)) = (Func a ((Var v):listT))
 oneStep p (Func a ((Num n):listT)) = (Func a ((Num n):listT))
 
 oneStep p (Func a (x:listT))
-    | (show (Func a (x:listT))) == (show (possibleOneStep)) = applyPossibleMatch possibleMatch (Func a (x:listT))
+    | (show (Func a (x:listT))) == (show (possibleOneStep)) = possibleMatch
     | otherwise                                             = possibleOneStep
         where possibleOneStep = (Func a ((oneStep p x):listT))
-              possibleMatch = searchMatchProg p (Func a (x:listT))
+              possibleMatch = matchProg p (Func a (x:listT))
 
-applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term
-applyPossibleMatch Nothing term = term
-applyPossibleMatch (Just list) term = replace list term
+applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term -> Term
+applyPossibleMatch Nothing term xB = term
+applyPossibleMatch (Just list) term xB = replace list xB
 
-searchMatchProg :: Program Term -> Term -> Maybe [(String,Term)]
-searchMatchProg (Prog [[]]) term = Nothing
-searchMatchProg (Prog ((((xA,xB)):restx):rest)) term
-    | possibleMatch == Nothing  = searchMatchProg (Prog (((restx):rest))) term
-    | otherwise                 = possibleMatch
+matchProg :: Program Term -> Term -> Term
+matchProg (Prog [[]]) term = term
+matchProg (Prog ((((xA,xB)):restx):rest)) term
+    | possibleMatch == Nothing  = matchProg (Prog (((restx):rest))) term
+    | otherwise                 = applyPossibleMatch possibleMatch term xB
         where possibleMatch = match xA term

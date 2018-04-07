@@ -91,3 +91,18 @@ let final = (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []]
 
 oneStep prog1 (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
 oneStep prog1 $ oneStep prog1 $ oneStep prog1 $ oneStep prog1 final
+let prog2 = Prog [[(e21,e22)]]
+let stop = oneStep prog1 $ oneStep prog1 $ oneStep prog1 $ oneStep prog1 final
+let stop2 = oneStep prog2 $ oneStep prog2 $ oneStep prog2 $ oneStep prog2 final
+
+
+let current = Func "Append" [Func "Cons" [Num 8, Func "Empty" []], Func "Empty" []]
+let listout = [("x",Num 8),("l1",Func "Empty" []),("l2",Func "Empty" [])]
+
+
+let current = Func "Append" [Func "Cons" [Num 8, Func "Empty" []], Func "Empty" []]
+let e11 = Func "Append" [Func "Empty" [],Var "l"]
+
+
+let maaa = (Func "Append" [Func "Empty" [],Var "l"])
+let asasa = Func "Append" [Func "Cons" [Num 8,Func "Empty" []],Func "Empty" []]

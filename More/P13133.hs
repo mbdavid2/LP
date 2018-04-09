@@ -13,25 +13,24 @@ sumEvenFibonaccis :: Integer -> Integer
 sumEvenFibonaccis n = sum $ filter even $ takeWhile (< n) fibs
 
 largestPrimeFactor :: Int -> Int
-largestPrimeFactor n = last $ filter (divisor n) $ primes n
+largestPrimeFactor n = head $ filter (isDivisor n) $ primes n
 
-divisor :: Int -> Int -> Bool
-divisor n x = (mod n x) == 0
+isDivisor :: Int -> Int -> Bool
+isDivisor n x = (mod n x) == 0
 
 primes :: Int -> [Int]
-primes n = primesAux [] [2..n]
+primes n = filter isPrimeIlluminati $ takeWhile (>2) $ iterate (\x -> x-1) n 
 
-primesAux :: [Int] -> [Int] -> [Int]
-primesAux l1 [] = []
-primesAux l1 (x:xs)
-    | anyDiv l1     = primesAux l1 xs
-    | otherwise     = x:(primesAux (x:l1) xs)
+isPrimeIlluminati :: Int -> Bool
+isPrimeIlluminati n
+    | n < 2 = False
+    | otherwise = not (has2Div 2)
     where
-        anyDiv :: [Int] -> Bool
-        anyDiv [] = False
-        anyDiv (h:hs)
-            | mod x h == 0  = True
-            | otherwise     = anyDiv hs
+        has2Div :: Int -> Bool
+        has2Div x
+            | x*x > n           = False
+            | (mod n x) == 0    = True
+            | otherwise         = has2Div (x+1)
 
 isPalindromic :: Integer -> Bool
 isPalindromic n = and $ zipWith (==) (show n) (reverse $ show n)

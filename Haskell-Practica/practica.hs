@@ -4,6 +4,8 @@
 --    Llenguatges de Programació    --
 --------------------------------------
 import System.IO
+(!=) :: Eq a => a -> a -> Bool 
+(!=) = (/=)
 
 data Program a = Prog [[(a,a)]]
     deriving (Show, Read, Eq)
@@ -123,11 +125,33 @@ oneStep p (LET name term1 termInside)
 oneStep p (Func a ((Var v):listT)) = (Func a ((Var v):listT))
 oneStep p (Func a ((Num n):listT)) = (Func a ((Num n):listT))
 
-oneStep p (Func a (x:listT))
-    | (show (Func a (x:listT))) == (show (possibleOneStep)) = possibleMatch
-    | otherwise                                             = possibleOneStep
-        where possibleOneStep = (Func a ((oneStep p x):listT))
-              possibleMatch = matchProg p (Func a (x:listT))
+oneStep p (Func a []) = (Func a [])
+
+oneStep p term@(Func a (x:listT))
+    | null redu = matchProg p term 
+    | otherwise = (Func a (irre++((oneStep p (head redu)):(tail redu))))
+    where irre = takeWhile (\x -> show (oneStep p x) == show x) (x:listT)
+          redu = dropWhile (\x -> show (oneStep p x) == show x) listT
+          possibleMatch = matchProg p (Func a (x:listT))
+              
+-- oneStepWhile :: Program Term -> [Term] -> [Term]
+-- mapWhile (x:xs) bool 
+--     | bool && (x /= possibleOneStep) = (possibleOneStep):mapWhile
+--     | otherwise = (x:xs)
+--         where possibleOneStep = oneStep (Prog [[]]) x
+          
+          
+
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
 
 applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term -> Term
 applyPossibleMatch Nothing term xB = term

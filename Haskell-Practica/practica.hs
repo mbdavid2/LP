@@ -4,8 +4,6 @@
 --    Llenguatges de Programació    --
 --------------------------------------
 import System.IO
-(!=) :: Eq a => a -> a -> Bool 
-(!=) = (/=)
 
 data Program a = Prog [[(a,a)]]
     deriving (Show, Read, Eq)
@@ -62,20 +60,19 @@ match :: Term -> Term -> Maybe [(String,Term)]
 match (Var a) term = Just [(a, term)]
 match term (Var a) = Just [(a, term)]
 match (Func a1 listT1) (Func a2 listT2)
-    | basic         = foldl concatMaybe (Just []) (zipWith match listT1 listT2)
+   | basic         = foldl concatMaybe (Just []) (zipWith match listT1 listT2)
+-- | basic         = concat $ sequence $ (zipWith match listT1 listT2)
     | otherwise     = Nothing
     where
         basic = a1 == a2 && (length listT1) == (length listT2)
 match _ _ = Nothing
 
--- Aixo no representa que es pot fer amb el >>= ? en plan aplica la funcio ++ a cada element
--- Hauria de ser >>= amb zipWith/map/foldl?¿?¿
--- >>= es nomes amb un element! jo vull desempaquetar 2 elements, fer f a b, i empaquetar el resultat
 concatMaybe :: Maybe [(String,Term)] -> Maybe [(String,Term)] -> Maybe [(String,Term)]
 concatMaybe (Just list1) (Just list2) = return (list1 ++ list2)
-concatMaybe Nothing Nothing = Nothing
-concatMaybe (Just list) Nothing = (Just list)
-concatMaybe Nothing (Just list) = (Just list)
+concatMaybe _ _ = Nothing
+-- concatMaybe Nothing Nothing = Nothing
+-- concatMaybe (Just list) Nothing = (Just list)
+-- concatMaybe Nothing (Just list) = (Just list)
 
 -------------- 5. OneStep --------------
 
@@ -117,41 +114,43 @@ oneStep p (ITE ifBool termA termB)
 
 -- LET
 oneStep p (LET name term1 termInside)
-    | (show termInside) /=  (show possibleOneStep)  = (LET name term1 possibleOneStep)
-    | otherwise                                     = performLET (LET name term1 termInside)
-        where possibleOneStep = (oneStep p termInside)
+    | (show term1) /=  (show possibleOneStep)               = (LET name possibleOneStep termInside)
+    | (show termInside) /=  (show possibleOneStepInside)    = (LET name term1 possibleOneStepInside)
+    | otherwise                                             = performLET (LET name term1 termInside)
+        where possibleOneStepInside = (oneStep p termInside)
+              possibleOneStep = (oneStep p term1)
 
 -- Si el primer de dins que es troba es Var/Num, ja no pot fer res més :(
+oneStep p (Num x) = Num x
+oneStep p (Var x) = Var x
 oneStep p (Func a ((Var v):listT)) = (Func a ((Var v):listT))
 oneStep p (Func a ((Num n):listT)) = (Func a ((Num n):listT))
 
 oneStep p (Func a []) = (Func a [])
 
 oneStep p term@(Func a (x:listT))
-    | null redu = matchProg p term 
-    | otherwise = (Func a (irre++((oneStep p (head redu)):(tail redu))))
-    where irre = takeWhile (\x -> show (oneStep p x) == show x) (x:listT)
-          redu = dropWhile (\x -> show (oneStep p x) == show x) listT
+    | null nope = matchProg p term
+    | otherwise = (Func a (same++((oneStep p (head nope)):(tail nope))))
+    where same = fst par
+          nope = snd par
+          par = (oneStepWhile p (x:listT))
           possibleMatch = matchProg p (Func a (x:listT))
-              
--- oneStepWhile :: Program Term -> [Term] -> [Term]
--- mapWhile (x:xs) bool 
---     | bool && (x /= possibleOneStep) = (possibleOneStep):mapWhile
---     | otherwise = (x:xs)
---         where possibleOneStep = oneStep (Prog [[]]) x
-          
-          
 
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
+
+-- oneStep p term@(Func a (x:listT))
+--   | null redu = matchProg p term
+--   | otherwise = (Func a (irre++((oneStep p (head redu)):(tail redu))))
+--   where irre = takeWhile (\x -> show (oneStep p x) == show x) (x:listT)
+--         redu = dropWhile (\x -> show (oneStep p x) == show x) listT
+--         possibleMatch = matchProg p (Func a (x:listT))
+
+oneStepWhile :: Program Term -> [Term] -> ([Term],[Term])
+oneStepWhile p [] = ([],[])
+oneStepWhile p (x:listTerms)
+    | show (oneStep p x) == show x  = ((x:list1),list2)
+    | otherwise = (list1,(x:list2))
+        where   list1 = (fst(oneStepWhile p listTerms))
+                list2 = (snd(oneStepWhile p listTerms))
 
 applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term -> Term
 applyPossibleMatch Nothing term xB = term
@@ -163,3 +162,55 @@ matchProg (Prog ((((xA,xB)):restx):rest)) term
     | possibleMatch == Nothing  = matchProg (Prog (((restx):rest))) term
     | otherwise                 = applyPossibleMatch possibleMatch term xB
         where possibleMatch = match xA term
+
+-------------- 6. Reduce --------------
+
+reduce :: Program Term -> Term -> Term
+reduce p term
+    | (show possibleReduce) == (show term) = possibleReduce
+    | otherwise                     = (reduce p possibleReduce)
+    where possibleReduce = (oneStep p term)
+
+-------------- 7. TTerm --------------
+
+data TTerm = INum Int | IVar String | IFunc String | Apply TTerm TTerm | Lambda String TTerm
+    deriving (Show, Read)
+
+-------------- 8. Transform --------------
+
+transform :: Term -> TTerm
+transform (Num x) = INum x
+transform (Var str) = IVar str
+transform (Func a [x]) = Apply (IFunc a) (transform x)
+transform (Func a xs) = Apply (transform (Func a (init xs))) (transform (last xs))
+transform (LET name termSubs termInside) = (Apply (Lambda name inside) subs)
+    where inside = transform termInside
+          subs = transform termSubs
+-- ITE??
+
+transformProgram:: Program Term -> Program TTerm
+transformProgram (Prog [[]]) = (Prog [[]])
+transformProgram (Prog list) = (Prog (map (map (\(x,y) -> (transform x, transform y))) $ list))
+
+-------------- 9. Types --------------
+
+data Types = TBool | TInt | ListsInt | TVar String | Arrow Type Type
+    deriving (Show, Read)
+
+{-
+• ">", "=="::(Arrow TInt (Arrow TInt TBool))
+• "not"::(Arrow TBool TBool)
+• "and", "or"::(Arrow TBool (Arrow TBool TBool))
+• "True", "False"::TBool
+• "+", "−", "∗"::(Arrow TInt (Arrow TInt TInt))
+• "Empty"::ListInt, "Cons"::(Arrow TInt (Arrow ListInt ListInt))
+• "ITE"::(Arrow TBool (Arrow (TVar "a") (Arrow (TVar "a") (TVar
+"a"))))
+-}
+
+-- wellTyped :: Program TTerm -> Bool
+-- wellTyped (Prog list)
+
+-------------- Entrada/Sortida y aleatorització --------------
+
+-- main = do

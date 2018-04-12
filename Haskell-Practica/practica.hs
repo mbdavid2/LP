@@ -4,6 +4,7 @@
 --    Llenguatges de Programació    --
 --------------------------------------
 import System.IO
+import System.Random
 
 data Program a = Prog [[(a,a)]]
     deriving (Show, Read, Eq)
@@ -24,10 +25,6 @@ replace subList (LET str t1 t2) = (LET str replacedt1 replacedt2)
           replacedt2 = replace subList t2
 replace subList term = term
 
--- Rep l'string de la variable i el terme original
--- + la llista de substitucio (funciona com lookup)
--- Si no el troba, torna el terme original
--- Si el troba, el substitueix
 findStringAndReplace :: (String, Term) -> [(String, Term)] -> Term
 findStringAndReplace (str, term) [] = term
 findStringAndReplace (str, term) (x:xs)
@@ -41,14 +38,12 @@ instance Eq Term where
         where term1Final = finalTerm term1
               term2Final = finalTerm term2
 
--- Retorna el Term resultant final d'aplicar tots els LETS de dins
 finalTerm :: Term -> Term
 finalTerm (LET str t1 t2) = performLET (LET str t1 t2)
 finalTerm (Func a listT) = Func a (map finalTerm listT)
 finalTerm (ITE t1 t2 t3) = ITE (finalTerm t1) (finalTerm t2) (finalTerm t3)
 finalTerm basicTerm = basicTerm
 
--- Aplica un LET i retorna el terme resultant
 performLET :: Term -> Term
 performLET (LET str term1 ((LET strB term1B term2B))) = replace [(str, term1)] insideTerm
     where insideTerm = replace [(strB, term1B)] term2B
@@ -70,9 +65,6 @@ match _ _ = Nothing
 concatMaybe :: Maybe [(String,Term)] -> Maybe [(String,Term)] -> Maybe [(String,Term)]
 concatMaybe (Just list1) (Just list2) = return (list1 ++ list2)
 concatMaybe _ _ = Nothing
--- concatMaybe Nothing Nothing = Nothing
--- concatMaybe (Just list) Nothing = (Just list)
--- concatMaybe Nothing (Just list) = (Just list)
 
 -------------- 5. OneStep --------------
 
@@ -120,37 +112,26 @@ oneStep p (LET name term1 termInside)
         where possibleOneStepInside = (oneStep p termInside)
               possibleOneStep = (oneStep p term1)
 
--- Si el primer de dins que es troba es Var/Num, ja no pot fer res més :(
 oneStep p (Num x) = Num x
 oneStep p (Var x) = Var x
-oneStep p (Func a ((Var v):listT)) = (Func a ((Var v):listT))
-oneStep p (Func a ((Num n):listT)) = (Func a ((Num n):listT))
 
-oneStep p (Func a []) = (Func a [])
-
-oneStep p term@(Func a (x:listT))
-    | null nope = matchProg p term
-    | otherwise = (Func a (same++((oneStep p (head nope)):(tail nope))))
-    where same = fst par
-          nope = snd par
-          par = (oneStepWhile p (x:listT))
-          possibleMatch = matchProg p (Func a (x:listT))
+--oneStep p (Func a []) = (Func a []) -> no fa falta
+oneStep p (Func a listT)
+  | not change = matchProg p (Func a listT)
+  | otherwise  = (Func a step)
+    where   step = fst pair
+            change = snd pair -- més eficient guardar-ho en una parella???
+            pair = oneStepWhile p listT
 
 
--- oneStep p term@(Func a (x:listT))
---   | null redu = matchProg p term
---   | otherwise = (Func a (irre++((oneStep p (head redu)):(tail redu))))
---   where irre = takeWhile (\x -> show (oneStep p x) == show x) (x:listT)
---         redu = dropWhile (\x -> show (oneStep p x) == show x) listT
---         possibleMatch = matchProg p (Func a (x:listT))
-
-oneStepWhile :: Program Term -> [Term] -> ([Term],[Term])
-oneStepWhile p [] = ([],[])
+-- el bool és per no haver de fer (show maybeStep) == show (listT) a dalt
+oneStepWhile :: Program Term -> [Term] -> ([Term],Bool)
+oneStepWhile p [] = ([],False)
 oneStepWhile p (x:listTerms)
-    | show (oneStep p x) == show x  = ((x:list1),list2)
-    | otherwise = (list1,(x:list2))
-        where   list1 = (fst(oneStepWhile p listTerms))
-                list2 = (snd(oneStepWhile p listTerms))
+  | show possible == show x = ((x:(fst(oneStepWhile p listTerms))),False)
+  | otherwise               = ((possible:listTerms),True)
+      where possible = (oneStep p x)
+
 
 applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term -> Term
 applyPossibleMatch Nothing term xB = term
@@ -168,7 +149,7 @@ matchProg (Prog ((((xA,xB)):restx):rest)) term
 reduce :: Program Term -> Term -> Term
 reduce p term
     | (show possibleReduce) == (show term) = possibleReduce
-    | otherwise                     = (reduce p possibleReduce)
+    | otherwise                            = (reduce p possibleReduce)
     where possibleReduce = (oneStep p term)
 
 -------------- 7. TTerm --------------
@@ -194,8 +175,8 @@ transformProgram (Prog list) = (Prog (map (map (\(x,y) -> (transform x, transfor
 
 -------------- 9. Types --------------
 
-data Types = TBool | TInt | ListsInt | TVar String | Arrow Type Type
-    deriving (Show, Read)
+-- data Types = TBool | TInt | ListsInt | TVar String | Arrow Type Type
+--     deriving (Show, Read)
 
 {-
 • ">", "=="::(Arrow TInt (Arrow TInt TBool))
@@ -213,4 +194,66 @@ data Types = TBool | TInt | ListsInt | TVar String | Arrow Type Type
 
 -------------- Entrada/Sortida y aleatorització --------------
 
--- main = do
+genera :: RandomGen s => s -> Int -> Int -> Int -> ([Int],s)
+genera s 0 _ _ = ([],s)
+genera s n lo hi = (x:l,s2)
+    where   (x,s1) = randomR (lo,hi) s
+            (l,s2) = genera s1 (n-1) lo hi
+
+jocProves :: (Program Term, Term)
+jocProves = do
+            let e11 = Func "Append" [Func "Empty" [],Var "l"]
+            let e12 = Var "l"
+            let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+            let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+            let prog1 = Prog [[(e11,e12),(e21,e22)]]
+            let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
+            let final = (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
+            (prog1,final)
+
+main =  do
+        std <- newStdGen
+        let (l1,s1) = genera std 1 1 2
+        print l1
+        let (l2,s2) = genera s1 1 7 14
+        print l2
+        let (prog,term) = jocProves
+        let reducedTerm = reduceRandom std prog term
+        print reducedTerm
+
+reduceRandom :: RandomGen s => s -> Program Term -> Term -> Term
+reduceRandom seed p term
+    | (show possibleReduce) == (show term) = possibleReduce
+    | otherwise                            = (reduceRandom seed p possibleReduce)
+    where possibleReduce = (oneStepRand seed p term)
+
+oneStepRand :: RandomGen s => s -> Program Term -> Term -> Term
+
+-- -- ITE
+-- oneStepRand p (ITE ifBool termA termB)
+--     | (ITE ifBool termA termB)      /= possibleOneStep = possibleOneStep
+--     | ifBool == (Func "True" [])    = termA
+--     | ifBool == (Func "False" [])   = termB
+--         where possibleOneStep = (oneStep p ifBool)
+--
+-- -- LET
+-- oneStepRand p (LET name term1 termInside)
+--     | (show term1) /=  (show possibleOneStep)               = (LET name possibleOneStep termInside)
+--     | (show termInside) /=  (show possibleOneStepInside)    = (LET name term1 possibleOneStepInside)
+--     | otherwise                                             = performLET (LET name term1 termInside)
+--         where possibleOneStepInside = (oneStep p termInside)
+--               possibleOneStep = (oneStep p term1)
+
+oneStepRand seed p leT@(LET name term1 termInside) = performLET leT
+
+-- si intenta fer oneStep a un de la llista, i no hi ha cap canvi, ho de intentar amb un altre?
+oneStepRand seed p (Func a listT)
+    | all (== 1) first  = oneStep p (Func a listT)
+    | otherwise         = (Func a (half1++[randElem]++(tail half2)))
+    where   maxRand = ((length (listT)) - 1)
+            (first,s1) = genera seed 1 1 2
+            (l1,s2) = genera s1 1 0 maxRand
+            randElem = listT !! (head l1)
+            half1 = fst pair
+            half2 = snd pair
+            pair = splitAt (head l1) listT

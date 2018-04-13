@@ -1,4 +1,0 @@
-*Main> let n1 = (Func "Paquito" [(Func "Cons" [(Var "x"), (Var "l1")]), (Var "l2")])
-*Main> let n2 = (Func "Append" [(Func "Cons" [(Num 3), (Func "Empty" [])]), (Func "Empty" [])])
-*Main> match n1 n2
-Nothing

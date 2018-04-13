@@ -139,6 +139,7 @@ applyPossibleMatch (Just list) term xB = replace list xB
 
 matchProg :: Program Term -> Term -> Term
 matchProg (Prog [[]]) term = term
+matchProg (Prog [[],list]) term = matchProg (Prog ([list])) term
 matchProg (Prog ((((xA,xB)):restx):rest)) term
     | possibleMatch == Nothing  = matchProg (Prog (((restx):rest))) term
     | otherwise                 = applyPossibleMatch possibleMatch term xB
@@ -162,12 +163,15 @@ data TTerm = INum Int | IVar String | IFunc String | Apply TTerm TTerm | Lambda 
 transform :: Term -> TTerm
 transform (Num x) = INum x
 transform (Var str) = IVar str
+transform (Func a []) = Apply (IFunc a) (IVar "")
 transform (Func a [x]) = Apply (IFunc a) (transform x)
 transform (Func a xs) = Apply (transform (Func a (init xs))) (transform (last xs))
 transform (LET name termSubs termInside) = (Apply (Lambda name inside) subs)
     where inside = transform termInside
           subs = transform termSubs
 -- ITE??
+-- transform (ITE termBool term1s term2) =
+
 
 transformProgram:: Program Term -> Program TTerm
 transformProgram (Prog [[]]) = (Prog [[]])
@@ -175,8 +179,95 @@ transformProgram (Prog list) = (Prog (map (map (\(x,y) -> (transform x, transfor
 
 -------------- 9. Types --------------
 
--- data Types = TBool | TInt | ListsInt | TVar String | Arrow Type Type
---     deriving (Show, Read)
+data Types = TBool | TInt | ListInt | TVar String | Arrow Types Types | Unk
+    deriving (Show, Read, Eq) -- Deriving d'Eq també per no haver de fer show cada vegada que vulgui comparar
+
+data BinTree a = NodeA a (BinTree a) (BinTree a) | NodeL a (BinTree a) (BinTree a) | Leaf TTerm a
+    deriving (Show)
+
+buildTree :: TTerm -> BinTree Types
+buildTree (IFunc name)
+    | name == "and" || name == "or"             = Leaf (IFunc name) (Arrow TBool (Arrow TBool TBool))
+    | name == "true" || name == "false"         = Leaf (IFunc name) TBool
+    | name == "not"                             = Leaf (IFunc name) (Arrow TBool TBool)
+    | name == "+" || name == "-" || name == "*" = Leaf (IFunc name) (Arrow TInt (Arrow TInt TInt))
+    | name == ">" || name == "=="               = Leaf (IFunc name) (Arrow TInt (Arrow TInt TBool))
+    | name == "Empty"                           = Leaf (IFunc name) ListInt
+    | name == "Cons"                            = Leaf (IFunc name) (Arrow TInt (Arrow ListInt ListInt))
+    | name == "Append"                          = Leaf (IFunc name) (Arrow TInt (Arrow ListInt ListInt))
+    | name == "ITE"                             = Leaf (IFunc name) (Arrow TBool (Arrow (TVar "a") (Arrow (TVar "a") (TVar "a"))))
+    | otherwise                                 = Leaf (IFunc name) Unk --buscar a prog??
+
+buildTree (INum x) = Leaf (INum x) TInt
+    -- | (show forceT) == (show Unk)        = Leaf (INum x) TInt
+    -- | otherwise                          = Leaf (Inum x) forceT
+
+buildTree (IVar str) = Leaf (IVar str) Unk
+
+buildTree (Lambda string tterm) = NodeL typeLambda left right
+    -- | tLeft == Unk || tRight == Unk = NodeL typeLambda left right
+    -- | otherwise                     = NodeL typeLambda left right
+    where left = (Leaf (IVar string) Unk)
+          right = (buildTree tterm)
+          tLeft = (getType left)
+          tRight = (getType right)
+          typeLambda = Arrow tLeft tRight
+
+buildTree (Apply tterm1 tterm2)
+    | b /= Unk && c /= Unk = NodeA a left (buildTreeKnownType tterm2 c)
+    -- | b /= Unk = NodeA a (buildTreeKnownType tterm1 b) right
+    | b /= Unk && c == Unk = NodeA a left right -- No propaguis si es Unk
+    | otherwise = NodeA Unk left right
+    where left = (buildTree tterm1)
+          right = (buildTree tterm2)
+          b = getType left
+          (c,a) = splitArrowType b
+
+-- es podria fer que si es força a un NInt a ser un tipus que no es NInt digui que es erroni
+buildTreeKnownType :: TTerm -> Types -> BinTree Types
+buildTreeKnownType (IVar str) knownType = Leaf (IVar str) knownType
+buildTreeKnownType (Apply tterm1 tterm2) knownType = NodeA knownType left right
+    where left = (buildTree tterm1)
+          right = (buildTree tterm2)
+buildTreeKnownType (Lambda string tterm) knownType = NodeL knownType left right
+    where left = (Leaf (IVar string) knownType)
+          right = (buildTree tterm)
+
+splitArrowType :: Types -> (Types,Types)
+splitArrowType (Arrow type1 type2) = (type1,type2)
+splitArrowType _ = (Unk,Unk)
+
+-- ITE??
+
+getType :: BinTree Types -> Types
+getType (Leaf _ types) = types
+getType (NodeA types _ _) = types
+getType (NodeL types _ _) = types
+
+--wellTypedTerm :: BinTree Types -> Types -> Bool
+
+-- Use this when building the tree and give the type it returns to the left name var
+findLambdaType :: BinTree Types -> String -> Types
+findLambdaType (Leaf (IVar name) knownType) findName
+    | name == findName = knownType
+    | otherwise        = Unk
+
+-- traverseTree :: BinTree Types -> Types -> Bool
+-- -- traverseTree (Leaf x typ) knownType = typ == knownType
+-- -- traverseTree (NodeA typ left right) knownType =
+-- traverseTree (NodeL typ left right) knownType = (NodeL typ left right)
+-- force "left" type, find in right tree
+
+wellTypedTerm (Leaf _ _) = True
+wellTypedTerm (NodeA typ left right)
+    | (getType left) == (Arrow (getType right) (typ)) = True
+    | otherwise = False
+wellTypedTerm (NodeL typ left right)
+    | typ == (Arrow (getType left) (getType right)) = True
+    | otherwise = False
+
+-- wellTyped :: Program TTerm -> Bool
+-- wellTyped (Prog list)
 
 {-
 • ">", "=="::(Arrow TInt (Arrow TInt TBool))
@@ -185,12 +276,10 @@ transformProgram (Prog list) = (Prog (map (map (\(x,y) -> (transform x, transfor
 • "True", "False"::TBool
 • "+", "−", "∗"::(Arrow TInt (Arrow TInt TInt))
 • "Empty"::ListInt, "Cons"::(Arrow TInt (Arrow ListInt ListInt))
-• "ITE"::(Arrow TBool (Arrow (TVar "a") (Arrow (TVar "a") (TVar
-"a"))))
+• "ITE"::(Arrow TBool (Arrow (TVar "a") (Arrow (TVar "a") (TVar "a"))))
 -}
 
--- wellTyped :: Program TTerm -> Bool
--- wellTyped (Prog list)
+
 
 -------------- Entrada/Sortida y aleatorització --------------
 

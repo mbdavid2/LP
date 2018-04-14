@@ -160,7 +160,7 @@ data TTerm = INum Int | IVar String | IFunc String | Apply TTerm TTerm | Lambda 
 transform :: Term -> TTerm
 transform (Num x) = INum x
 transform (Var str) = IVar str
-transform (Func a []) = Apply (IFunc a) (IVar "")
+transform (Func a []) = IFunc a
 transform (Func a [x]) = Apply (IFunc a) (transform x)
 transform (Func a xs) = Apply (transform (Func a (init xs))) (transform (last xs))
 transform (LET name termSubs termInside) = (Apply (Lambda name inside) subs)
@@ -168,7 +168,6 @@ transform (LET name termSubs termInside) = (Apply (Lambda name inside) subs)
           subs = transform termSubs
 -- ITE??
 -- transform (ITE termBool term1s term2) =
-
 
 transformProgram:: Program Term -> Program TTerm
 transformProgram (Prog [[]]) = (Prog [[]])
@@ -297,10 +296,10 @@ jocProves = do
 
 main =  do
         std <- newStdGen
-        let (l1,s1) = genera std 1 1 2
-        print l1
-        let (l2,s2) = genera s1 1 7 14
-        print l2
+        --let (l1,s1) = genera std 1 1 2
+        --print l1
+        --let (l2,s2) = genera s1 1 7 14
+        -- print l2
         let (prog,term) = jocProves
         let reducedTerm = reduceRandom std prog term
         print reducedTerm
@@ -309,31 +308,37 @@ reduceRandom :: RandomGen s => s -> Program Term -> Term -> Term
 reduceRandom seed p term
     | (show possibleReduce) == (show term) = possibleReduce
     | otherwise                            = (reduceRandom seed p possibleReduce)
-    where possibleReduce = (oneStepRand seed p term)
+    where possibleReduce = (oneStepRand seed p term [])
 
-oneStepRand :: RandomGen s => s -> Program Term -> Term -> Term
+oneStepRand :: RandomGen s => s -> Program Term -> Term -> [Term] -> Term
 
--- -- ITE
--- oneStepRand p (ITE ifBool termA termB)
---     | (ITE ifBool termA termB)      /= possibleOneStep = possibleOneStep
---     | ifBool == (Func "True" [])    = termA
---     | ifBool == (Func "False" [])   = termB
---         where possibleOneStep = (oneStep p ifBool)
---
--- -- LET
--- oneStepRand p (LET name term1 termInside)
---     | (show term1) /=  (show possibleOneStep)               = (LET name possibleOneStep termInside)
---     | (show termInside) /=  (show possibleOneStepInside)    = (LET name term1 possibleOneStepInside)
---     | otherwise                                             = performLET (LET name term1 termInside)
---         where possibleOneStepInside = (oneStep p termInside)
---               possibleOneStep = (oneStep p term1)
+oneStepRand s p (Num x) l = Num x
+oneStepRand s p (Var x) l = Var x
+oneStepRand s p (Func a []) l
+    | (head first) == 1 = oneStep p (Func a [])
+    | otherwise = (Func a [])
+        where (first,s1) = genera s 1 1 2
 
-oneStepRand seed p leT@(LET name term1 termInside) = performLET leT
+-- ITE
+oneStepRand seed p (ITE ifBool termA termB) l
+    | (head first) == 1 && (ITE ifBool termA termB) /= possibleOneStep = possibleOneStep
+    | (head first) == 2 && (show (termA)) /= show (oneStepRand s1 p termA l)    = termA
+    | (head first) == 3 && (show (termB)) /= show (oneStepRand s1 p termB l)    = termB
+    | otherwise = (ITE ifBool termA termB)
+        where possibleOneStep = (oneStepRand s1 p ifBool l)
+              (first,s1) = genera seed 1 1 3
+-- LET
+oneStepRand seed p lett@(LET name term1 termInside) l
+    | (head first) == 2 && (show (term1)) /= show (oneStepRand s1 p term1 l) = (LET name (oneStepRand s1 p term1 l) termInside)
+    | (head first) == 3 && (show (termInside)) /= show (oneStepRand s1 p termInside l) = (LET name term1 (oneStepRand s1 p termInside l))
+    | otherwise = performLET (LET name term1 termInside)
+        where (first,s1) = genera seed 1 1 3
 
--- si intenta fer oneStep a un de la llista, i no hi ha cap canvi, ho de intentar amb un altre?
-oneStepRand seed p (Func a listT)
-    | all (== 1) first  = oneStep p (Func a listT)
-    | otherwise         = (Func a (half1++[randElem]++(tail half2)))
+-- Func with terms
+oneStepRand seed p (Func a listT) usedTerms
+    | (head first) == 1 && possibleOneStep /= (Func a listT) = possibleOneStep
+    | maxRand >= 1 && possibleElem /= randElem && (not used) = (Func a (half1++[possibleElem]++(tail half2)))
+    | otherwise                                              = oneStep p (Func a listT)
     where   maxRand = ((length (listT)) - 1)
             (first,s1) = genera seed 1 1 2
             (l1,s2) = genera s1 1 0 maxRand
@@ -341,3 +346,6 @@ oneStepRand seed p (Func a listT)
             half1 = fst pair
             half2 = snd pair
             pair = splitAt (head l1) listT
+            possibleOneStep = matchProg p (Func a listT)
+            possibleElem = (oneStepRand s2 p randElem usedTerms)
+            used = elem randElem usedTerms

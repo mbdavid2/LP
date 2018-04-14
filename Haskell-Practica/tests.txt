@@ -89,5 +89,21 @@ let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Va
 let prog1 = Prog [[(e11,e12),(e21,e22)]]
 let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
 
+let e22 = buildTree $ transform $ (LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"]))
 let tP = transformProgram prog1
 let tT = transform e22
+
+buildTree $ transform (LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"]))
+buildTree $ transform $ ((Func "Append" [Var "l1", Var "l2"]))
+buildTree $ transform $ (Func "Cons" [Var "x", Var "m"])
+buildTree $ transform $ (LET "x" (Num 5) (Func "+" [Var "x", Var "y"]))
+
+
+
+
+let e11 = Func "Append" [Func "Empty" [],Var "l"]
+let e12 = Var "l"
+let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+let prog1 = Prog [[(e11,e12),(e21,e22)]]
+wellTyped $ transformProgram prog1

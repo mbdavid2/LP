@@ -120,18 +120,15 @@ oneStep p (Func a listT)
   | not change = matchProg p (Func a listT)
   | otherwise  = (Func a step)
     where   step = fst pair
-            change = snd pair -- més eficient guardar-ho en una parella???
+            change = snd pair
             pair = oneStepWhile p listT
 
-
--- el bool és per no haver de fer (show maybeStep) == show (listT) a dalt
 oneStepWhile :: Program Term -> [Term] -> ([Term],Bool)
 oneStepWhile p [] = ([],False)
 oneStepWhile p (x:listTerms)
   | show possible == show x = ((x:(fst(oneStepWhile p listTerms))),False)
   | otherwise               = ((possible:listTerms),True)
       where possible = (oneStep p x)
-
 
 applyPossibleMatch :: Maybe [(String,Term)] -> Term -> Term -> Term
 applyPossibleMatch Nothing term xB = term
@@ -179,7 +176,7 @@ transformProgram (Prog list) = (Prog (map (map (\(x,y) -> (transform x, transfor
 
 -------------- 9. Types --------------
 
-data Types = TBool | TInt | ListInt | TVar String | Arrow Types Types | Unk
+data Types = TBool | TInt | ListInt | TVar String | Arrow Types Types | Unk | Error
     deriving (Show, Read, Eq) -- Deriving d'Eq també per no haver de fer show cada vegada que vulgui comparar
 
 data BinTree a = NodeA a (BinTree a) (BinTree a) | NodeL a (BinTree a) (BinTree a) | Leaf TTerm a
@@ -199,15 +196,10 @@ buildTree (IFunc name)
     | otherwise                                 = Leaf (IFunc name) Unk --buscar a prog??
 
 buildTree (INum x) = Leaf (INum x) TInt
-    -- | (show forceT) == (show Unk)        = Leaf (INum x) TInt
-    -- | otherwise                          = Leaf (Inum x) forceT
-
 buildTree (IVar str) = Leaf (IVar str) Unk
-
 buildTree (Lambda string tterm) = NodeL typeLambda left right
-    -- | tLeft == Unk || tRight == Unk = NodeL typeLambda left right
-    -- | otherwise                     = NodeL typeLambda left right
-    where left = (Leaf (IVar string) Unk)
+    where left = (Leaf (IVar string) possibleVar)
+          possibleVar = findLambdaType (right) string
           right = (buildTree tterm)
           tLeft = (getType left)
           tRight = (getType right)
@@ -215,49 +207,64 @@ buildTree (Lambda string tterm) = NodeL typeLambda left right
 
 buildTree (Apply tterm1 tterm2)
     | b /= Unk && c /= Unk = NodeA a left (buildTreeKnownType tterm2 c)
-    -- | b /= Unk = NodeA a (buildTreeKnownType tterm1 b) right
-    | b /= Unk && c == Unk = NodeA a left right -- No propaguis si es Unk
     | otherwise = NodeA Unk left right
-    where left = (buildTree tterm1)
-          right = (buildTree tterm2)
-          b = getType left
-          (c,a) = splitArrowType b
+        where left = (buildTree tterm1)
+              b = getType left
+              (c,a) = splitArrowType b
+              right = (buildTree tterm2)
 
--- es podria fer que si es força a un NInt a ser un tipus que no es NInt digui que es erroni
 buildTreeKnownType :: TTerm -> Types -> BinTree Types
+buildTreeKnownType (IFunc name) knownType
+    | knownType == (getType expectedLeaf) = expectedLeaf
+    | otherwise                           = Leaf (IFunc name) Error
+        where expectedLeaf = buildTree (IFunc name)
+
+buildTreeKnownType (INum x) knownType
+    | knownType == TInt = Leaf (INum x) knownType
+    | otherwise         = Leaf (INum x) Error
+
 buildTreeKnownType (IVar str) knownType = Leaf (IVar str) knownType
-buildTreeKnownType (Apply tterm1 tterm2) knownType = NodeA knownType left right
-    where left = (buildTree tterm1)
-          right = (buildTree tterm2)
-buildTreeKnownType (Lambda string tterm) knownType = NodeL knownType left right
-    where left = (Leaf (IVar string) knownType)
-          right = (buildTree tterm)
+
+buildTreeKnownType (Apply tterm1 tterm2) knownType
+    | a == knownType && b /= Unk && c /= Unk = NodeA a left (buildTreeKnownType tterm2 c)
+    | a /= knownType = NodeA Error left right
+    | otherwise = NodeA Unk left right
+         where left = (buildTree tterm1)
+               right = (buildTree tterm2)
+               b = getType left
+               (c,a) = splitArrowType b
+
+-- buildTreeKnownType (Lambda string tterm) knownType = NodeL knownType left right
+--     where left = (Leaf (IVar string) knownType)
+--           right = (buildTree tterm)
 
 splitArrowType :: Types -> (Types,Types)
 splitArrowType (Arrow type1 type2) = (type1,type2)
 splitArrowType _ = (Unk,Unk)
-
--- ITE??
 
 getType :: BinTree Types -> Types
 getType (Leaf _ types) = types
 getType (NodeA types _ _) = types
 getType (NodeL types _ _) = types
 
---wellTypedTerm :: BinTree Types -> Types -> Bool
-
--- Use this when building the tree and give the type it returns to the left name var
 findLambdaType :: BinTree Types -> String -> Types
 findLambdaType (Leaf (IVar name) knownType) findName
     | name == findName = knownType
     | otherwise        = Unk
+findLambdaType (NodeA _ left right) findName
+    | possibleRight /= Unk = possibleRight
+    | possibleLeft /= Unk  = possibleLeft
+    | otherwise            = Unk
+    where possibleLeft = findLambdaType left findName
+          possibleRight = findLambdaType right findName
+findLambdaType (NodeL _ left right) findName
+  | possibleRight /= Unk = possibleRight
+  | possibleLeft /= Unk  = possibleLeft
+  | otherwise            = Unk
+  where possibleLeft = findLambdaType left findName
+        possibleRight = findLambdaType right findName
 
--- traverseTree :: BinTree Types -> Types -> Bool
--- -- traverseTree (Leaf x typ) knownType = typ == knownType
--- -- traverseTree (NodeA typ left right) knownType =
--- traverseTree (NodeL typ left right) knownType = (NodeL typ left right)
--- force "left" type, find in right tree
-
+wellTypedTerm :: BinTree Types -> Bool
 wellTypedTerm (Leaf _ _) = True
 wellTypedTerm (NodeA typ left right)
     | (getType left) == (Arrow (getType right) (typ)) = True
@@ -266,20 +273,8 @@ wellTypedTerm (NodeL typ left right)
     | typ == (Arrow (getType left) (getType right)) = True
     | otherwise = False
 
--- wellTyped :: Program TTerm -> Bool
--- wellTyped (Prog list)
-
-{-
-• ">", "=="::(Arrow TInt (Arrow TInt TBool))
-• "not"::(Arrow TBool TBool)
-• "and", "or"::(Arrow TBool (Arrow TBool TBool))
-• "True", "False"::TBool
-• "+", "−", "∗"::(Arrow TInt (Arrow TInt TInt))
-• "Empty"::ListInt, "Cons"::(Arrow TInt (Arrow ListInt ListInt))
-• "ITE"::(Arrow TBool (Arrow (TVar "a") (Arrow (TVar "a") (TVar "a"))))
--}
-
-
+wellTyped :: Program TTerm -> Bool
+wellTyped (Prog list) = and $ concat $ (map (map (\(x,y) -> wellTypedTerm (buildTree x) && wellTypedTerm (buildTree y))) $ list)
 
 -------------- Entrada/Sortida y aleatorització --------------
 

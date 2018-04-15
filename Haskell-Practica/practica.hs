@@ -115,7 +115,6 @@ oneStep p (LET name term1 termInside)
 oneStep p (Num x) = Num x
 oneStep p (Var x) = Var x
 
---oneStep p (Func a []) = (Func a []) -> no fa falta
 oneStep p (Func a listT)
   | not change = matchProg p (Func a listT)
   | otherwise  = (Func a step)
@@ -166,8 +165,6 @@ transform (Func a xs) = Apply (transform (Func a (init xs))) (transform (last xs
 transform (LET name termSubs termInside) = (Apply (Lambda name inside) subs)
     where inside = transform termInside
           subs = transform termSubs
--- ITE??
--- transform (ITE termBool term1s term2) =
 
 transformProgram:: Program Term -> Program TTerm
 transformProgram (Prog [[]]) = (Prog [[]])
@@ -192,7 +189,7 @@ buildTree (IFunc name)
     | name == "Cons"                            = Leaf (IFunc name) (Arrow TInt (Arrow ListInt ListInt))
     | name == "Append"                          = Leaf (IFunc name) (Arrow TInt (Arrow ListInt ListInt))
     | name == "ITE"                             = Leaf (IFunc name) (Arrow TBool (Arrow (TVar "a") (Arrow (TVar "a") (TVar "a"))))
-    | otherwise                                 = Leaf (IFunc name) Unk --buscar a prog??
+    | otherwise                                 = Leaf (IFunc name) Unk
 
 buildTree (INum x) = Leaf (INum x) TInt
 buildTree (IVar str) = Leaf (IVar str) Unk
@@ -232,10 +229,6 @@ buildTreeKnownType (Apply tterm1 tterm2) knownType
                right = (buildTree tterm2)
                b = getType left
                (c,a) = splitArrowType b
-
--- buildTreeKnownType (Lambda string tterm) knownType = NodeL knownType left right
---     where left = (Leaf (IVar string) knownType)
---           right = (buildTree tterm)
 
 splitArrowType :: Types -> (Types,Types)
 splitArrowType (Arrow type1 type2) = (type1,type2)

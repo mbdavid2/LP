@@ -36,8 +36,8 @@ let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
 let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
 let prog1 = Prog [[(e11,e12),(e21,e22)]]
 
-let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
-let final = (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
+let ne1 =
+let final = (Func "Append" [Func "Cons" [LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"])), Func "Empty" []], Func "Empty" []])
 
 oneStep prog1 (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
 oneStep prog1 $ oneStep prog1 $ oneStep prog1 $ oneStep prog1 final
@@ -45,7 +45,7 @@ let prog2 = Prog [[(e21,e22)]]
 let stop = oneStep prog1 $ oneStep prog1 $ oneStep prog1 $ oneStep prog1 final
 let stop2 = oneStep prog2 $ oneStep prog2 $ oneStep prog2 $ oneStep prog2 final
 
-
+let final = (Func "Append" [Func "Cons" [LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"])), Func "Empty" []], Func "Empty" []])
 let current = Func "Append" [Func "Cons" [Num 8, Func "Empty" []], Func "Empty" []]
 let listout = [("x",Num 8),("l1",Func "Empty" []),("l2",Func "Empty" [])]
 
@@ -109,3 +109,7 @@ let prog1 = Prog [[(e11,e12),(e21,e22)]]
 wellTyped $ transformProgram prog1
 
 let e11 = Func "Append" [Func "Empty" [], Num x]
+
+
+
+(Func "Append" [Func "Cons" [LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"])), Func "Empty" []], Func "Empty" []])

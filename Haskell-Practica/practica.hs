@@ -283,27 +283,6 @@ genera s n lo hi = (x:l,s2)
     where   (x,s1) = randomR (lo,hi) s
             (l,s2) = genera s1 (n-1) lo hi
 
-jocProves :: (Program Term, Term)
-jocProves = do
-            let e11 = Func "Append" [Func "Empty" [],Var "l"]
-            let e12 = Var "l"
-            let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
-            let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
-            let prog1 = Prog [[(e11,e12),(e21,e22)]]
-            let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
-            let final = (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
-            (prog1,final)
-
-main =  do
-        std <- newStdGen
-        --let (l1,s1) = genera std 1 1 2
-        --print l1
-        --let (l2,s2) = genera s1 1 7 14
-        -- print l2
-        let (prog,term) = jocProves
-        let reducedTerm = reduceRandom std prog term
-        print reducedTerm
-
 reduceRandom :: RandomGen s => s -> Program Term -> Term -> Term
 reduceRandom seed p term
     | (show possibleReduce) == (show term) = possibleReduce
@@ -349,3 +328,52 @@ oneStepRand seed p (Func a listT) usedTerms
             possibleOneStep = matchProg p (Func a listT)
             possibleElem = (oneStepRand s2 p randElem usedTerms)
             used = elem randElem usedTerms
+
+-------------- Main --------------
+
+main :: IO ()
+main =  do
+        file <- openFile "programhs.txt" ReadMode
+        prog <- hGetContents file
+        let tPro = ((read prog)::(Program Term))
+        if (wellTyped $ transformProgram tPro)
+        then putStrLn "\nPrograma tipat correctament  "
+        else putStrLn "\nEl programa no tipa"
+        putStrLn "\nIntrodueix un Term (escrit correctament):  "
+        term <- getLine
+        let tTerm = ((read term)::(Term))
+        putStr "\n"
+        (mainAux tPro tTerm)
+
+mainAux :: Program Term -> Term -> IO ()
+mainAux prog term = do
+                    putStrLn "\nEstratègia postordre (P) o estratègia aleatoria (A)?:  "
+                    inp <- getLine
+                    if (checkCorrectInput inp)
+                    then if (inp == "P" || inp == "p")
+                         then do
+                              putStrLn "Terme reduït amb estrategia postordre: "
+                              putStrLn $ show(reduce prog term)
+                         else do
+                              if (inp == "A" || inp == "a")
+                              then do
+                                  putStrLn "Terme reduït amb estrategia aleatoria: "
+                                  std <- newStdGen
+                                  let reducedTerm = reduceRandom std prog term
+                                  putStrLn $ show(reducedTerm)
+                              else putStrLn "Mmmmm..."
+                    else (mainAux prog term)
+
+checkCorrectInput :: String -> Bool
+checkCorrectInput input = (input == "A" || input == "a" || input == "P" || input == "p")
+
+jocProves :: (Program Term, Term)
+jocProves = do
+            let e11 = Func "Append" [Func "Empty" [],Var "l"]
+            let e12 = Var "l"
+            let e21 = Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"]
+            let e22 = LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"])
+            let prog1 = Prog [[(e11,e12),(e21,e22)]]
+            let ne1 = LET "x" (Num 3) (LET "y" (Num 5) (Func "+" [Var "x", Var "y"]))
+            let final = (Func "Append" [Func "Cons" [ne1, Func "Empty" []], Func "Empty" []])
+            (prog1,final)

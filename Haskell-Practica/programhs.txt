@@ -1,0 +1,1 @@
+Prog [[(Func "Append" [Func "Empty" [],Var "l"],Var "l"),(Func "Append" [Func "Cons" [Var "x", Var "l1"], Var "l2"],LET "m" (Func "Append" [Var "l1", Var "l2"]) (Func "Cons" [Var "x", Var "m"]))]]

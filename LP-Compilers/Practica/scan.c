@@ -156,7 +156,7 @@ static void act15()
 
 static void act16()
 { 
-		NLA = EQUAL;
+		NLA = EQ;
 	}
 
 
@@ -265,13 +265,13 @@ static void act33()
 
 static void act34()
 { 
-		NLA = 35;
+		NLA = 34;
 	}
 
 
 static void act35()
 { 
-		NLA = 36;
+		NLA = 35;
 	}
 
 #define DfaStates	90

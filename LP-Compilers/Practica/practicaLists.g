@@ -35,9 +35,9 @@ struct ElemList {
 };
 
 typedef list<ElemList> hetList;
-typedef hetList::iterator hetIter;
+typedef hetList::iterator iter;
 
-ElemList initElem (int n, hetList l, bool ty) {
+ElemList initElem (int n, hetList list, bool ty) {
     /*if (n == -1) {
         cout << "mec";
         printHetList(list);
@@ -49,20 +49,18 @@ ElemList initElem (int n, hetList l, bool ty) {
     ElemList newElem;
     newElem.isNum = ty;
     newElem.num = n;
-    newElem.llista = l;
+    newElem.llista = list;
     return newElem;
 }
 
 void printHetList (hetList llista) {
     cout << "[";
     //for (auto el : llista) {
-    hetIter it;
-    int i = 0;
-    for (it = llista.begin(); it != llista.end(); it++) {
+    iter it;
+    for (int it = llista.begin(); it != llista.end(); it++) {
         if (!(*it).isNum) printHetList(((*it).llista));
         else cout << (*it).num;
         if (i < llista.size()-1) cout << ", ";
-        i++;
     }
     cout << "]";
 }
@@ -145,6 +143,26 @@ AST* createASTlist(AST* childs) {
   return as;
 }
 
+/*hetList evaluate(AST *a) {
+    hetList list;
+    if (a == NULL) return list;
+    if (a->kind == "[") { //Lista
+        int i = 0;
+        while (child(a,i) != NULL) {
+            if (child(a,i)->kind == "[") { //Una altra llista
+                //evaluate(child(a,0))
+                hetList insideList = evaluate(child(a,i));
+                list.push_back(initElem(-1, &insideList));
+            }
+            else {
+                //Numero
+                list.push_back(initElem(stoi(child(a,i)->kind), NULL));
+            }
+            ++i;
+        }
+    }
+    return list;*/
+
 void appendHetLists(hetList& result, hetList& A, hetList& B) {
     result = A;
     for (auto el : B) result.push_back(el);
@@ -177,10 +195,10 @@ int reduceHetList(string op, hetList& l) {
     return result;
 }
 
-void mapHetList(hetList& res, string op, int n, hetList& llista) {
-    res = llista;
-    hetIter it;
-    for (it = res.begin(); it != res.end(); it++) {
+void mapHetList(hetList& res, string op, int n, hetList& l) {
+    res = l;
+    iter it;
+    for (int it = llista.begin(); it != llista.end(); it++) {
         if ((*it).isNum) {
             //NUM//
             if (op == "+") (*it).num += n;
@@ -188,11 +206,15 @@ void mapHetList(hetList& res, string op, int n, hetList& llista) {
             else if (op == "*") (*it).num *= n;
         }
         else mapHetList((*it).llista, op, n, (*it).llista);
-    }
+
+    }    
 }
 
 void filterHetList(hetList& res, string binOp, int n, hetList& l) {
-    hetIter it;
+    hetList::iterator it;
+    /*cout << "about to filter this list: ";
+    printHetList(l);
+    cout << endl;*/
     for (it = l.begin(); it != l.end(); it++) {
         //cout << (*(res.end()-1)).num << endl;
         if ((*it).isNum) {
@@ -200,6 +222,7 @@ void filterHetList(hetList& res, string binOp, int n, hetList& l) {
                 if ((*it).num != n) res.push_back((*it));
             }
             else if (binOp == "==") {
+                cout << "salu2";
                 if ((*it).num == n) res.push_back((*it));
             }
             else if (binOp == ">") {
@@ -215,11 +238,14 @@ void filterHetList(hetList& res, string binOp, int n, hetList& l) {
             res.push_back(initElem(-1, insideList, false));
         }
     }
+    /*cout << "Result: ";
+    printHetList(res);
+    cout << endl;*/
 }
 
 hetList evaluateList(AST *a) {
-    hetList llista;
-    if (a == NULL) return llista;
+    hetList list;
+    if (a == NULL) return list;
     //cout << "OP : " << a->kind << endl;
     if (a->kind == "[") {
         int i = 0;
@@ -227,14 +253,14 @@ hetList evaluateList(AST *a) {
             ElemList el;
             if (child(a,i)->kind != "[") {
                 //Numero//
-                el = initElem(stoi(child(a,i)->kind), llista, true);
+                el = initElem(stoi(child(a,i)->kind), list, true);
             }
             else if (child(a,i)->kind == "[") {
                 //Llista//
                 hetList insideList = evaluateList(child(a,i));
                 el = initElem(-1, insideList, false);
             }
-            llista.push_back(el);
+            list.push_back(el);
             ++i;
         }
     }
@@ -242,28 +268,28 @@ hetList evaluateList(AST *a) {
         //Concat//
         hetList firstList = evaluateList(child(a,0));
         hetList secondList = evaluateList(child(a,1));
-        appendHetLists(llista, firstList, secondList);
-        return llista;
+        appendHetLists(list, firstList, secondList);
+        return list;
     }
     else if (a->kind == "lreduce") {
         int res = reduceHetList(child(a,0)->kind, m[child(a,1)->kind]);
-        ElemList el = initElem(res, llista, true);
-        llista.push_back(el);
+        ElemList el = initElem(res, list, true);
+        list.push_back(el);
     }
     else if (a->kind == "lmap") {
-        mapHetList(llista, child(a,0)->kind, stoi(child(a,1)->kind), m[child(a,2)->kind]);
-        return llista;
+        mapHetList(list, child(a,0)->kind, stoi(child(a,1)->kind), m[child(a,2)->kind]);
+        return list;
     }
     else if (a->kind == "lfilter") {
-        filterHetList(llista, child(a,0)->kind, stoi(child(child(a,0),0)->kind), m[child(a,1)->kind]);
-        return llista;
+        filterHetList(list, child(a,0)->kind, stoi(child(child(a,0),0)->kind), m[child(a,1)->kind]);
+        return list;
     }
     else {
         //Ident//
-        llista = m[a->kind];
-        return llista;
+        list = m[a->kind];
+        return list;
     }
-    return llista;
+    return list;
 }
 /*
 bool evaluateB(AST *a) {
@@ -366,7 +392,7 @@ exprBatom: LID (DIF^ | EQ^ | GT^ | LT^) LID
          | "\("! exprB "\)"!
          ;
 
-expr: listDef
+expr: list
     | LID CONCAT^ LID
     | LREDUCE^ func LID
     | LMAP^ func NUM LID
@@ -375,5 +401,5 @@ expr: listDef
 func: (MINUS | PLUS | PROD);
 innerFunc: (DIF^ | EQ^ | GT^ | LT^) NUM;
 
-listDef: "\["^ (EMPTYLIST! | (atomList) ("\,"! atomList)* "\]"!);
-atomList: (listDef | NUM);
+list: "\["^ (EMPTYLIST! | (atomList) ("\,"! atomList)* "\]"!);
+atomList: (list | NUM);

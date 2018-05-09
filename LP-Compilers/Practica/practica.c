@@ -58,46 +58,46 @@ ANTLR_INFO
 #include <cstdlib>
 #include <cmath>
 #include <map>
-#include <vector>
-
-
+#include <list>
 
 struct ElemList {
+  bool isNum;
   int num;
-  vector<ElemList> llista;
+  list<ElemList> llista;
 };
 
-typedef vector<ElemList> hetList;
+typedef list<ElemList> hetList;
+typedef hetList::iterator hetIter;
+
+ElemList initElem (int n, hetList l, bool ty) {
+  /*if (n == -1) {
+    cout << "mec";
+    printHetList(list);
+  }*/
+  /*cout << "Init: " << endl << "   Num = " << n << endl;
+  cout << "   List = ";
+  if (list == NULL) cout << "null" << endl;
+  else { cout << "  "; printHetList(*list); }*/
+  ElemList newElem;
+  newElem.isNum = ty;
+  newElem.num = n;
+  newElem.llista = l;
+  return newElem;
+}
 
 void printHetList (hetList llista) {
   cout << "[";
   //for (auto el : llista) {
-    for (int i = 0; i < llista.size(); i++) {
-      if (llista[i].num == -1) printHetList((llista[i].llista));
-      else cout << llista[i].num;
+    hetIter it;
+    int i = 0;
+    for (it = llista.begin(); it != llista.end(); it++) {
+      if (!(*it).isNum) printHetList(((*it).llista));
+      else cout << (*it).num;
       if (i < llista.size()-1) cout << ", ";
+      i++;
     }
     cout << "]";
   }
-  
-ElemList initElem (int n, hetList list) {
-    /*if (n == -1) {
-      cout << "mec";
-      printHetList(list);
-    }*/
-    /*cout << "Init: " << endl << "   Num = " << n << endl;
-    cout << "   List = ";
-    if (list == NULL) cout << "null" << endl;
-    else { cout << "  "; printHetList(*list); }*/
-    ElemList newElem;
-    newElem.num = n;
-    newElem.llista = list;
-    return newElem;
-  }
-  
-
-  
-
   
 map<string,hetList> m; //To store the variables
   
@@ -177,91 +177,162 @@ AST* createASTlist(AST* childs) {
     return as;
   }
   
-/*hetList evaluate(AST *a) {
-    hetList list;
-    if (a == NULL) return list;
-    if (a->kind == "[") { //Lista
-      int i = 0;
-      while (child(a,i) != NULL) {
-        if (child(a,i)->kind == "[") { //Una altra llista
-          //evaluate(child(a,0))
-          hetList insideList = evaluate(child(a,i));
-          list.push_back(initElem(-1, &insideList));
-        }
-        else {
-          //Numero
-          list.push_back(initElem(stoi(child(a,i)->kind), NULL));
-        }
-        ++i;
+void appendHetLists(hetList& result, hetList& A, hetList& B) {
+    result = A;
+    for (auto el : B) result.push_back(el);
+  }
+  
+void popHetList(hetList& l) {
+    if (!l.empty()) l.pop_front();
+  }
+  
+int reduceHetList(string op, hetList& l) {
+    int result = 0;
+    if (op == "+") {
+      for (auto el: l) {
+        if (el.isNum) result += el.num;
+        else result += reduceHetList(op, el.llista);
       }
     }
-    return list;*/
-    
-hetList evaluateList(AST *a) {
-      hetList list;
-      if (a == NULL) return list;
-      if (a->kind == "[") {
-        int i = 0;
-        while (child(a,i) != NULL) {
-          ElemList el;
-          if (child(a,i)->kind != "[") {
-            //Numero
-            el = initElem(stoi(child(a,i)->kind), list);
-          }
-          else if (child(a,i)->kind == "[") {
-            //Llista
-            hetList insideList = evaluateList(child(a,i));
-            el = initElem(-1, insideList);
-          }
-          list.push_back(el);
-          ++i;
+    else if (op == "-") {
+      for (auto el: l) {
+        if (el.isNum) result -= el.num;
+        else result *= reduceHetList(op, el.llista);
+      }
+    }
+    else if (op == "*") {
+      for (auto el: l) {
+        if (el.isNum) result *= el.num;
+        else result *= reduceHetList(op, el.llista);
+      }
+    }
+    return result;
+  }
+  
+void mapHetList(hetList& res, string op, int n, hetList& llista) {
+    res = llista;
+    hetIter it;
+    for (it = res.begin(); it != res.end(); it++) {
+      if ((*it).isNum) {
+        //NUM//
+        if (op == "+") (*it).num += n;
+        else if (op == "-") (*it).num -= n;
+        else if (op == "*") (*it).num *= n;
+      }
+      else mapHetList((*it).llista, op, n, (*it).llista);
+    }
+  }
+  
+void filterHetList(hetList& res, string binOp, int n, hetList& l) {
+    hetIter it;
+    for (it = l.begin(); it != l.end(); it++) {
+      //cout << (*(res.end()-1)).num << endl;
+      if ((*it).isNum) {
+        if (binOp == "!=") {
+          if ((*it).num != n) res.push_back((*it));
+        }
+        else if (binOp == "==") {
+          if ((*it).num == n) res.push_back((*it));
+        }
+        else if (binOp == ">") {
+          if ((*it).num > n) res.push_back((*it));
+        }
+        else if (binOp == "<") {
+          if ((*it).num < n) res.push_back((*it));
         }
       }
       else {
-        if (a->kind == "#") {
-          //cout << "salu2" << endl;
-          list.push_back(initElem(-24, list));
-          return list;
+        hetList insideList;
+        filterHetList(insideList, binOp, n, (*it).llista);
+        res.push_back(initElem(-1, insideList, false));
+      }
+    }
+  }
+  
+hetList evaluateList(AST *a) {
+    hetList llista;
+    if (a == NULL) return llista;
+    //cout << "OP : " << a->kind << endl;
+    if (a->kind == "[") {
+      int i = 0;
+      while (child(a,i) != NULL) {
+        ElemList el;
+        if (child(a,i)->kind != "[") {
+          //Numero//
+          el = initElem(stoi(child(a,i)->kind), llista, true);
         }
+        else if (child(a,i)->kind == "[") {
+          //Llista//
+          hetList insideList = evaluateList(child(a,i));
+          el = initElem(-1, insideList, false);
+        }
+        llista.push_back(el);
+        ++i;
       }
-      return list;
     }
-    /*
-    bool evaluateB(AST *a) {
-      return (evaluate(child(a,0))) == (evaluate(child(a,1)));
-    }*/
-    
+    else if (a->kind == "#") {
+      //Concat//
+      hetList firstList = evaluateList(child(a,0));
+      hetList secondList = evaluateList(child(a,1));
+      appendHetLists(llista, firstList, secondList);
+      return llista;
+    }
+    else if (a->kind == "lreduce") {
+      int res = reduceHetList(child(a,0)->kind, m[child(a,1)->kind]);
+      ElemList el = initElem(res, llista, true);
+      llista.push_back(el);
+    }
+    else if (a->kind == "lmap") {
+      mapHetList(llista, child(a,0)->kind, stoi(child(a,1)->kind), m[child(a,2)->kind]);
+      return llista;
+    }
+    else if (a->kind == "lfilter") {
+      filterHetList(llista, child(a,0)->kind, stoi(child(child(a,0),0)->kind), m[child(a,1)->kind]);
+      return llista;
+    }
+    else {
+      //Ident//
+      llista = m[a->kind];
+      return llista;
+    }
+    return llista;
+  }
+  /*
+  bool evaluateB(AST *a) {
+    return (evaluate(child(a,0))) == (evaluate(child(a,1)));
+  }*/
+  
 void execute(AST *a) {
-      if (a == NULL)
-      return;
-      else if (a->kind == "=") {
-        m[child(a,0)->kind] = evaluateList(child(a,1));
-        cout << child(a,0)->kind << endl;
-        printHetList(m[child(a,0)->kind]);
-        cout << endl << "//////////////////////" << endl;
-      }
-      //else if (a->kind == "=") execute(child(a,1));
-      /*if (a == NULL)
-      return;
-      else if (a->kind == ":=") {
-        m[child(a,0)->text] = evaluate(child(a,1));
-      }
-      else if (a->kind == "if"){
-        if (evaluateB(child(a,0))) execute(child(a,1));
-      }
-      else if (a->kind == "write")
-      cout << evaluate(child(a,0)) << endl;
-      */
-      execute(a->right);
+    if (a == NULL)
+    return;
+    else if (a->kind == "=") {
+      m[child(a,0)->kind] = evaluateList(child(a,1));
+      cout << child(a,0)->kind << endl;
+      printHetList(m[child(a,0)->kind]);
+      cout << endl << "//////////////////////" << endl;
     }
-    
+    //else if (a->kind == "=") execute(child(a,1));
+    /*if (a == NULL)
+    return;
+    else if (a->kind == ":=") {
+      m[child(a,0)->text] = evaluate(child(a,1));
+    }
+    else if (a->kind == "if"){
+      if (evaluateB(child(a,0))) execute(child(a,1));
+    }
+    else if (a->kind == "write")
+    cout << evaluate(child(a,0)) << endl;
+    */
+    execute(a->right);
+  }
+  
 int main() {
-      AST *root = NULL;
-      ANTLR(lists(&root), stdin);
-      ASTPrint(root);
-      execute(root->down);
-    }
-    
+    AST *root = NULL;
+    ANTLR(lists(&root), stdin);
+    //ASTPrint(root);
+    execute(root->down);
+  }
+  
   
 
 void
@@ -597,8 +668,8 @@ AST **_root;
   zzBLOCK(zztasp1);
   zzMake0;
   {
-  if ( (LA(1)==35) ) {
-    list(zzSTR); zzlink(_root, &_sibling, &_tail);
+  if ( (LA(1)==34) ) {
+    listDef(zzSTR); zzlink(_root, &_sibling, &_tail);
   }
   else {
     if ( (LA(1)==LID) ) {
@@ -731,9 +802,9 @@ fail:
 
 void
 #ifdef __USE_PROTOS
-list(AST**_root)
+listDef(AST**_root)
 #else
-list(_root)
+listDef(_root)
 AST **_root;
 #endif
 {
@@ -741,7 +812,7 @@ AST **_root;
   zzBLOCK(zztasp1);
   zzMake0;
   {
-  zzmatch(35); zzsubroot(_root, &_sibling, &_tail); zzCONSUME;
+  zzmatch(34); zzsubroot(_root, &_sibling, &_tail); zzCONSUME;
   {
     zzBLOCK(zztasp2);
     zzMake0;
@@ -763,8 +834,8 @@ AST **_root;
           zzBLOCK(zztasp3);
           zzMake0;
           {
-          while ( (LA(1)==36) ) {
-            zzmatch(36);  zzCONSUME;
+          while ( (LA(1)==35) ) {
+            zzmatch(35);  zzCONSUME;
             atomList(zzSTR); zzlink(_root, &_sibling, &_tail);
             zzLOOP(zztasp3);
           }
@@ -803,8 +874,8 @@ AST **_root;
     zzBLOCK(zztasp2);
     zzMake0;
     {
-    if ( (LA(1)==35) ) {
-      list(zzSTR); zzlink(_root, &_sibling, &_tail);
+    if ( (LA(1)==34) ) {
+      listDef(zzSTR); zzlink(_root, &_sibling, &_tail);
     }
     else {
       if ( (LA(1)==NUM) ) {

@@ -23,7 +23,7 @@
 #define LMAP 13
 #define LFILTER 14
 #define EMPTYLIST 15
-#define EQUAL 16
+#define EQ 16
 #define DIF 17
 #define GT 18
 #define LT 19
@@ -39,7 +39,6 @@
 #define ENDWHILE 29
 #define LID 30
 #define SPACE 31
-#define EQ 34
 
 #ifdef __USE_PROTOS
 void lists(AST**_root);
@@ -102,9 +101,9 @@ extern void innerFunc();
 #endif
 
 #ifdef __USE_PROTOS
-void list(AST**_root);
+void listDef(AST**_root);
 #else
-extern void list();
+extern void listDef();
 #endif
 
 #ifdef __USE_PROTOS

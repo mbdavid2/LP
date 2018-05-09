@@ -132,7 +132,7 @@ lfilter
 
 ==
 	<<
-		NLA = EQUAL;
+		NLA = EQ;
 	>>
 
 \!=
@@ -223,12 +223,12 @@ endwhile
 
 \[
 	<<
-		NLA = 35;
+		NLA = 34;
 	>>
 
 \,
 	<<
-		NLA = 36;
+		NLA = 35;
 	>>
 
 %%

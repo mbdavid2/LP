@@ -28,16 +28,18 @@
 #define GT 18
 #define LT 19
 #define EMPTY 20
-#define NOT 21
-#define IF 22
-#define THEN 23
-#define ENDIF 24
-#define WHILE 25
-#define DO 26
-#define ENDWHILE 27
-#define LID 28
-#define SPACE 29
-#define EQ 32
+#define AND 21
+#define OR 22
+#define NOT 23
+#define IF 24
+#define THEN 25
+#define ENDIF 26
+#define WHILE 27
+#define DO 28
+#define ENDWHILE 29
+#define LID 30
+#define SPACE 31
+#define EQ 34
 
 #ifdef __USE_PROTOS
 void lists(AST**_root);
@@ -52,15 +54,9 @@ extern void list_oper();
 #endif
 
 #ifdef __USE_PROTOS
-void id(AST**_root);
+void elem(AST**_root);
 #else
-extern void id();
-#endif
-
-#ifdef __USE_PROTOS
-void func(AST**_root);
-#else
-extern void func();
+extern void elem();
 #endif
 
 #ifdef __USE_PROTOS
@@ -70,15 +66,39 @@ extern void exprB();
 #endif
 
 #ifdef __USE_PROTOS
+void exprBor(AST**_root);
+#else
+extern void exprBor();
+#endif
+
+#ifdef __USE_PROTOS
+void exprBnot(AST**_root);
+#else
+extern void exprBnot();
+#endif
+
+#ifdef __USE_PROTOS
+void exprBatom(AST**_root);
+#else
+extern void exprBatom();
+#endif
+
+#ifdef __USE_PROTOS
 void expr(AST**_root);
 #else
 extern void expr();
 #endif
 
 #ifdef __USE_PROTOS
-void funcTwoPar(AST**_root);
+void func(AST**_root);
 #else
-extern void funcTwoPar();
+extern void func();
+#endif
+
+#ifdef __USE_PROTOS
+void innerFunc(AST**_root);
+#else
+extern void innerFunc();
 #endif
 
 #ifdef __USE_PROTOS
@@ -99,9 +119,10 @@ extern SetWordType zzerr2[];
 extern SetWordType zzerr3[];
 extern SetWordType zzerr4[];
 extern SetWordType zzerr5[];
+extern SetWordType setwd1[];
 extern SetWordType zzerr6[];
 extern SetWordType zzerr7[];
-extern SetWordType setwd1[];
 extern SetWordType zzerr8[];
 extern SetWordType zzerr9[];
+extern SetWordType zzerr10[];
 extern SetWordType setwd2[];

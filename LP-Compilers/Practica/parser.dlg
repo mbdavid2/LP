@@ -155,6 +155,16 @@ empty
 		NLA = EMPTY;
 	>>
 
+and
+	<<
+		NLA = AND;
+	>>
+
+or
+	<<
+		NLA = OR;
+	>>
+
 not
 	<<
 		NLA = NOT;
@@ -203,22 +213,22 @@ endwhile
 
 \(
 	<<
-		NLA = 30;
+		NLA = 32;
 	>>
 
 \)
 	<<
-		NLA = 31;
+		NLA = 33;
 	>>
 
 \[
 	<<
-		NLA = 33;
+		NLA = 35;
 	>>
 
 \,
 	<<
-		NLA = 34;
+		NLA = 36;
 	>>
 
 %%

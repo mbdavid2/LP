@@ -275,10 +275,19 @@ void execute(AST *a) {
         return;
     else if (a->kind == "=") {
         m[child(a,0)->kind] = evaluateList(child(a,1));
-        cout << child(a,0)->kind << endl;
+        /*cout << child(a,0)->kind << endl;
         printHetList(m[child(a,0)->kind]);
-        cout << endl << "//////////////////////" << endl;
+        cout << endl << "//////////////////////" << endl;*/
     }
+    else if (a->kind == "print") {
+        cout << child(a,0)->kind << " = ";
+        printHetList(m[child(a,0)->kind]);
+        cout << endl;
+    }
+    else if (a->kind == "pop") {
+        popHetList(m[child(a,0)->kind]);
+    }
+    else cout << "nope" << endl;
     //else if (a->kind == "=") execute(child(a,1));
     /*if (a == NULL)
         return;
@@ -297,7 +306,7 @@ void execute(AST *a) {
 int main() {
     AST *root = NULL;
     ANTLR(lists(&root), stdin);
-    //ASTPrint(root);
+    ASTPrint(root);
     execute(root->down);
 }
 

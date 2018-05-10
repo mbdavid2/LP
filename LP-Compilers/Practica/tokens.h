@@ -27,18 +27,20 @@
 #define DIF 17
 #define GT 18
 #define LT 19
-#define EMPTY 20
-#define AND 21
-#define OR 22
-#define NOT 23
-#define IF 24
-#define THEN 25
-#define ENDIF 26
-#define WHILE 27
-#define DO 28
-#define ENDWHILE 29
-#define LID 30
-#define SPACE 31
+#define GTE 20
+#define LTE 21
+#define EMPTY 22
+#define AND 23
+#define OR 24
+#define NOT 25
+#define IF 26
+#define THEN 27
+#define ENDIF 28
+#define WHILE 29
+#define DO 30
+#define ENDWHILE 31
+#define LID 32
+#define SPACE 33
 
 #ifdef __USE_PROTOS
 void lists(AST**_root);
@@ -116,12 +118,14 @@ extern void atomList();
 extern SetWordType zzerr1[];
 extern SetWordType zzerr2[];
 extern SetWordType zzerr3[];
+extern SetWordType setwd1[];
 extern SetWordType zzerr4[];
 extern SetWordType zzerr5[];
-extern SetWordType setwd1[];
 extern SetWordType zzerr6[];
 extern SetWordType zzerr7[];
 extern SetWordType zzerr8[];
 extern SetWordType zzerr9[];
 extern SetWordType zzerr10[];
+extern SetWordType zzerr11[];
+extern SetWordType zzerr12[];
 extern SetWordType setwd2[];

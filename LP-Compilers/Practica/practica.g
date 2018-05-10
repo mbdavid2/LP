@@ -53,7 +53,7 @@ ElemList initElem (int n, hetList l, bool ty) {
     return newElem;
 }
 
-void printHetList (hetList llista) {
+void printHetList (hetList& llista) {
     cout << "[";
     //for (auto el : llista) {
     hetIter it;
@@ -65,6 +65,15 @@ void printHetList (hetList llista) {
         i++;
     }
     cout << "]";
+}
+
+void printHeadHetList (hetList& llista) {
+    cout << "salu2" << endl;
+    hetIter it = llista.begin();
+    if (!(*it).isNum) printHeadHetList((*it).llista);
+    else cout << (*it).num;
+    cout << endl;
+    cout << "salu2" << endl;
 }
 
 map<string,hetList> m; //To store the variables
@@ -151,7 +160,9 @@ void appendHetLists(hetList& result, hetList& A, hetList& B) {
 }
 
 void popHetList(hetList& l) {
+    //cout << "antes: "; printHetList(l); cout << endl;
     if (!l.empty()) l.pop_front();
+    //cout << "depueh: "; printHetList(l); cout << endl;
 }
 
 void flattenHetList (hetList& l) {
@@ -230,6 +241,22 @@ void filterHetList(hetList& res, string binOp, int n, hetList& l) {
     }
 }
 
+bool isEmptyHetList(hetList& l) {
+    if (l.empty()) return true;
+    else {
+        hetIter it;
+        bool aux = true;
+        for (it = l.begin(); it != l.end(); it++) {
+            if ((*it).isNum) return false;
+            else {
+                aux = isEmptyHetList((*it).llista);
+                if (!aux) return false;
+            }
+        }
+    }
+    return true;
+}
+
 hetList evaluateList(AST *a) {
     hetList llista;
     if (a == NULL) return llista;
@@ -279,42 +306,80 @@ hetList evaluateList(AST *a) {
     return llista;
 }
 
+bool compareHetLists(string op, hetList& A, hetList& B) {
+    //Pre: flattened lists
+    if (op == "==") if (A.size() != B.size()) return false;
+    hetIter it1, it2;
+    it1 = A.begin();
+    it2 = B.begin();
+    while (it1 != A.end() or it2 != B.end()){
+        if (op == "==") if((*it1).num != (*it2).num) return false;
+        if (op == ">") {
+             if (it1 == A.end() and it2 != B.end()) return false;
+             if (it1 != A.end() and it2 == B.end()) return true;
+             if ((*it1).num < (*it2).num) return false;
+             else if ((*it1).num > (*it2).num) return true;
+        }
+        if (op == "<") {
+            if (it1 == A.end() and it2 != B.end()) return true;
+            if (it1 != A.end() and it2 == B.end()) return false;
+            if ((*it1).num < (*it2).num) return true;
+            else if ((*it1).num > (*it2).num) return false;
+        }
+        it1++;
+        it2++;
+    }
+    return false;
+}
+
+bool checkBooleanExpr(AST *a) {
+    bool aux = false;
+    string op = a->kind;
+    if (op == "and") aux = (checkBooleanExpr(child(a,0))) and (checkBooleanExpr(child(a,1)));
+    else if (op == "or") aux = (checkBooleanExpr(child(a,0))) or (checkBooleanExpr(child(a,1)));
+    else if (op == "not") aux = !(checkBooleanExpr(child(a,0)));
+    else if (op == "empty") aux = isEmptyHetList(m[child(a,0)->kind]);
+    else if (op == ">") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+    else if (op == "<") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+    else if (op == ">=") aux = !compareHetLists("<", m[child(a,0)->kind], m[child(a,1)->kind]);
+    else if (op == "<=") aux = !compareHetLists(">", m[child(a,0)->kind], m[child(a,1)->kind]);
+    else if (op == "==") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+    else if (op == "!=") aux = !compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+    return aux;
+}
+
 void execute(AST *a) {
-    if (a == NULL)
-        return;
+    if (a == NULL) return;
     else if (a->kind == "=") {
         m[child(a,0)->kind] = evaluateList(child(a,1));
-        //cout << child(a,0)->kind << endl;
-        //printHetList(m[child(a,0)->kind]);
-        //cout << endl << "//////////////////////" << endl;
     }
     else if (a->kind == "print") {
-        cout << child(a,0)->kind << " = ";
-        printHetList(m[child(a,0)->kind]);
-        cout << endl;
+        if (child(a,0)->kind == "head") printHeadHetList(m[child(a,0)->kind]);
+        else {
+            //cout << child(a,0)->kind << " = ";
+            printHetList(m[child(a,0)->kind]);
+            cout << endl;
+        }
     }
     else if (a->kind == "pop") {
         popHetList(m[child(a,0)->kind]);
     }
     else if (a->kind == "flatten") {
         flattenHetList(m[child(a,0)->kind]);
-        //cout << child(a,0)->kind << " = ";
-        /*printHetList(m[child(a,0)->kind]);
-        cout << endl;*/
+    }
+    else if (a->kind == "if") {
+        bool bExpr = checkBooleanExpr(child(a,0));
+        if (bExpr) execute(child(a,1)->down);
+    }
+    else if (a->kind == "while") {
+        bool bExpr = checkBooleanExpr(child(a,0));
+        AST *b = child(a,1)->down;
+        while (bExpr) {
+            execute(b);
+            bExpr = checkBooleanExpr(child(a,0));
+        }
     }
     else cout << "nope" << endl;
-    //else if (a->kind == "=") execute(child(a,1));
-    /*if (a == NULL)
-        return;
-    else if (a->kind == ":=") {
-        m[child(a,0)->text] = evaluate(child(a,1));
-    }
-    else if (a->kind == "if"){
-        if (evaluateB(child(a,0))) execute(child(a,1));
-    }
-    else if (a->kind == "write")
-        cout << evaluate(child(a,0)) << endl;
-    */
     execute(a->right);
 }
 
@@ -346,10 +411,12 @@ int main() {
 #token LFILTER "lfilter"
 
 #token EMPTYLIST "\]"
-#token EQ "=="
+#token EQ "\=="
 #token DIF "\!="
 #token GT "\>"
 #token LT "\<"
+#token GTE "\>="
+#token LTE "\<="
 #token EMPTY "empty"
 #token AND "and"
 #token OR "or"
@@ -385,7 +452,7 @@ exprBor: exprBnot (OR^ exprBnot)*;
 
 exprBnot: (NOT^ | ) exprBatom;
 
-exprBatom: LID (DIF^ | EQ^ | GT^ | LT^) LID
+exprBatom: (LID | listDef) (DIF^ | EQ^ | GT^ | LT^ | GTE^ | LTE^) (LID | listDef)
          | EMPTY^ "\("! LID "\)"!
          | "\("! exprB "\)"!
          ;
@@ -397,7 +464,7 @@ expr: listDef
     | LFILTER^ innerFunc LID
     ;
 func: (MINUS | PLUS | PROD);
-innerFunc: (DIF^ | EQ^ | GT^ | LT^) NUM;
+innerFunc: (DIF^ | EQ^ | GT^ | LT^ | GTE^ | LTE^) NUM;
 
 listDef: "\["^ (EMPTYLIST! | (atomList) ("\,"! atomList)* "\]"!);
 atomList: (listDef | NUM);

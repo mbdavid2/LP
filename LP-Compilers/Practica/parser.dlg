@@ -130,7 +130,7 @@ lfilter
 		NLA = EMPTYLIST;
 	>>
 
-==
+\==
 	<<
 		NLA = EQ;
 	>>
@@ -148,6 +148,16 @@ lfilter
 \<
 	<<
 		NLA = LT;
+	>>
+
+\>=
+	<<
+		NLA = GTE;
+	>>
+
+\<=
+	<<
+		NLA = LTE;
 	>>
 
 empty
@@ -213,22 +223,22 @@ endwhile
 
 \(
 	<<
-		NLA = 32;
+		NLA = 34;
 	>>
 
 \)
 	<<
-		NLA = 33;
+		NLA = 35;
 	>>
 
 \[
 	<<
-		NLA = 34;
+		NLA = 36;
 	>>
 
 \,
 	<<
-		NLA = 35;
+		NLA = 37;
 	>>
 
 %%

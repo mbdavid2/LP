@@ -186,6 +186,19 @@ void popHetList(hetList& l) {
     if (!l.empty()) l.pop_front();
   }
   
+void flattenHetList (hetList& l) {
+    hetList flatList;
+    for (auto el: l) {
+      if (el.isNum) flatList.push_back(el);
+      else {
+        hetList newL = el.llista;
+        flattenHetList(newL);
+        appendHetLists(flatList, flatList, newL);
+      }
+    }
+    l = flatList;
+  }
+  
 int reduceHetList(string op, hetList& l) {
     int result = 0;
     if (op == "+") {
@@ -297,19 +310,15 @@ hetList evaluateList(AST *a) {
     }
     return llista;
   }
-  /*
-  bool evaluateB(AST *a) {
-    return (evaluate(child(a,0))) == (evaluate(child(a,1)));
-  }*/
   
 void execute(AST *a) {
     if (a == NULL)
     return;
     else if (a->kind == "=") {
       m[child(a,0)->kind] = evaluateList(child(a,1));
-      /*cout << child(a,0)->kind << endl;
-      printHetList(m[child(a,0)->kind]);
-      cout << endl << "//////////////////////" << endl;*/
+      //cout << child(a,0)->kind << endl;
+      //printHetList(m[child(a,0)->kind]);
+      //cout << endl << "//////////////////////" << endl;
     }
     else if (a->kind == "print") {
       cout << child(a,0)->kind << " = ";
@@ -318,6 +327,12 @@ void execute(AST *a) {
     }
     else if (a->kind == "pop") {
       popHetList(m[child(a,0)->kind]);
+    }
+    else if (a->kind == "flatten") {
+      flattenHetList(m[child(a,0)->kind]);
+      //cout << child(a,0)->kind << " = ";
+      /*printHetList(m[child(a,0)->kind]);
+      cout << endl;*/
     }
     else cout << "nope" << endl;
     //else if (a->kind == "=") execute(child(a,1));

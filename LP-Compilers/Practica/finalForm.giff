@@ -10,14 +10,13 @@ print L6
 L7 = lfilter != 1 L4
 print L7
 L8 = lfilter > 2 L7
-flatten L4
-if (L2 > L4) then
-    print L2
+if (L2 > L) then
+    print L8
 endif
 
-while (not empty(L2)) do
-    print L2
-    pop(L2)
+while (not empty(L4)) do
+    print head (L4)
+    pop(L4)
 endwhile
 
 

@@ -100,12 +100,11 @@ void printHetList (hetList& llista) {
   }
   
 void printHeadHetList (hetList& llista) {
-    cout << "salu2" << endl;
+    if (llista.empty()) return;
     hetIter it = llista.begin();
-    if (!(*it).isNum) printHeadHetList((*it).llista);
+    if (!(*it).isNum) printHetList((*it).llista);
     else cout << (*it).num;
     cout << endl;
-    cout << "salu2" << endl;
   }
   
 map<string,hetList> m; //To store the variables
@@ -192,9 +191,7 @@ void appendHetLists(hetList& result, hetList& A, hetList& B) {
   }
   
 void popHetList(hetList& l) {
-    //cout << "antes: "; printHetList(l); cout << endl;
     if (!l.empty()) l.pop_front();
-    //cout << "depueh: "; printHetList(l); cout << endl;
   }
   
 void flattenHetList (hetList& l) {
@@ -274,7 +271,9 @@ void filterHetList(hetList& res, string binOp, int n, hetList& l) {
   }
   
 bool isEmptyHetList(hetList& l) {
-    if (l.empty()) return true;
+    return l.empty();
+    //Versio per comprovar si hi ha numeros
+    /*if (l.empty()) return true;
     else {
       hetIter it;
       bool aux = true;
@@ -286,7 +285,7 @@ bool isEmptyHetList(hetList& l) {
         }
       }
     }
-    return true;
+    return true;*/
   }
   
 hetList evaluateList(AST *a) {
@@ -386,7 +385,7 @@ void execute(AST *a) {
       m[child(a,0)->kind] = evaluateList(child(a,1));
     }
     else if (a->kind == "print") {
-      if (child(a,0)->kind == "head") printHeadHetList(m[child(a,0)->kind]);
+      if (child(a,0)->kind == "head") printHeadHetList(m[child(child(a,0),0)->kind]);
       else {
         //cout << child(a,0)->kind << " = ";
         printHetList(m[child(a,0)->kind]);

@@ -38,14 +38,6 @@ typedef list<ElemList> hetList;
 typedef hetList::iterator hetIter;
 
 ElemList initElem (int n, hetList l, bool ty) {
-    /*if (n == -1) {
-        cout << "mec";
-        printHetList(list);
-    }*/
-    /*cout << "Init: " << endl << "   Num = " << n << endl;
-    cout << "   List = ";
-    if (list == NULL) cout << "null" << endl;
-    else { cout << "  "; printHetList(*list); }*/
     ElemList newElem;
     newElem.isNum = ty;
     newElem.num = n;
@@ -55,7 +47,6 @@ ElemList initElem (int n, hetList l, bool ty) {
 
 void printHetList (hetList& llista) {
     cout << "[";
-    //for (auto el : llista) {
     hetIter it;
     int i = 0;
     for (it = llista.begin(); it != llista.end(); it++) {
@@ -68,30 +59,19 @@ void printHetList (hetList& llista) {
 }
 
 void printHeadHetList (hetList& llista) {
-    cout << "salu2" << endl;
+    if (llista.empty()) return;
     hetIter it = llista.begin();
-    if (!(*it).isNum) printHeadHetList((*it).llista);
+    if (!(*it).isNum) printHetList((*it).llista);
     else cout << (*it).num;
     cout << endl;
-    cout << "salu2" << endl;
 }
 
 map<string,hetList> m; //To store the variables
 
 // function to fill token information
 void zzcr_attr(Attrib *attr, int type, char *text) {
-  /*if (type == NUM) {
-    //attr->kind = "intconst";
-    attr->text = text;
-  }
-  else if (type == LID) {
-    //attr->kind = "LID";
-    attr->text = text;
-  }*/
-  //else {
     attr->kind = text;
     attr->text = "";
-  //}
 }
 
 // function to create a new AST node
@@ -160,9 +140,7 @@ void appendHetLists(hetList& result, hetList& A, hetList& B) {
 }
 
 void popHetList(hetList& l) {
-    //cout << "antes: "; printHetList(l); cout << endl;
     if (!l.empty()) l.pop_front();
-    //cout << "depueh: "; printHetList(l); cout << endl;
 }
 
 void flattenHetList (hetList& l) {
@@ -218,7 +196,6 @@ void mapHetList(hetList& res, string op, int n, hetList& llista) {
 void filterHetList(hetList& res, string binOp, int n, hetList& l) {
     hetIter it;
     for (it = l.begin(); it != l.end(); it++) {
-        //cout << (*(res.end()-1)).num << endl;
         if ((*it).isNum) {
             if (binOp == "!=") {
                 if ((*it).num != n) res.push_back((*it));
@@ -242,7 +219,9 @@ void filterHetList(hetList& res, string binOp, int n, hetList& l) {
 }
 
 bool isEmptyHetList(hetList& l) {
-    if (l.empty()) return true;
+    return l.empty();
+    //Versio per comprovar si hi ha numeros
+    /*if (l.empty()) return true;
     else {
         hetIter it;
         bool aux = true;
@@ -254,13 +233,12 @@ bool isEmptyHetList(hetList& l) {
             }
         }
     }
-    return true;
+    return true;*/
 }
 
 hetList evaluateList(AST *a) {
     hetList llista;
     if (a == NULL) return llista;
-    //cout << "OP : " << a->kind << endl;
     if (a->kind == "[") {
         int i = 0;
         while (child(a,i) != NULL) {
@@ -354,7 +332,7 @@ void execute(AST *a) {
         m[child(a,0)->kind] = evaluateList(child(a,1));
     }
     else if (a->kind == "print") {
-        if (child(a,0)->kind == "head") printHeadHetList(m[child(a,0)->kind]);
+        if (child(a,0)->kind == "head") printHeadHetList(m[child(child(a,0),0)->kind]);
         else {
             //cout << child(a,0)->kind << " = ";
             printHetList(m[child(a,0)->kind]);

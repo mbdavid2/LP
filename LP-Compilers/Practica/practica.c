@@ -70,14 +70,6 @@ typedef list<ElemList> hetList;
 typedef hetList::iterator hetIter;
 
 ElemList initElem (int n, hetList l, bool ty) {
-  /*if (n == -1) {
-    cout << "mec";
-    printHetList(list);
-  }*/
-  /*cout << "Init: " << endl << "   Num = " << n << endl;
-  cout << "   List = ";
-  if (list == NULL) cout << "null" << endl;
-  else { cout << "  "; printHetList(*list); }*/
   ElemList newElem;
   newElem.isNum = ty;
   newElem.num = n;
@@ -87,340 +79,327 @@ ElemList initElem (int n, hetList l, bool ty) {
 
 void printHetList (hetList& llista) {
   cout << "[";
-  //for (auto el : llista) {
-    hetIter it;
-    int i = 0;
-    for (it = llista.begin(); it != llista.end(); it++) {
-      if (!(*it).isNum) printHetList(((*it).llista));
-      else cout << (*it).num;
-      if (i < llista.size()-1) cout << ", ";
-      i++;
-    }
-    cout << "]";
-  }
-  
-void printHeadHetList (hetList& llista) {
-    if (llista.empty()) return;
-    hetIter it = llista.begin();
-    if (!(*it).isNum) printHetList((*it).llista);
+  hetIter it;
+  int i = 0;
+  for (it = llista.begin(); it != llista.end(); it++) {
+    if (!(*it).isNum) printHetList(((*it).llista));
     else cout << (*it).num;
-    cout << endl;
+    if (i < llista.size()-1) cout << ",";
+    i++;
   }
-  
+  cout << "]";
+}
+
+void printHeadHetList (hetList& llista) {
+  if (llista.empty()) return;
+  hetIter it = llista.begin();
+  if (!(*it).isNum) printHetList((*it).llista);
+  else cout << (*it).num;
+  cout << endl;
+}
+
 map<string,hetList> m; //To store the variables
-  
+
 // function to fill token information
-  void zzcr_attr(Attrib *attr, int type, char *text) {
-    /*if (type == NUM) {
-      //attr->kind = "intconst";
-      attr->text = text;
-    }
-    else if (type == LID) {
-      //attr->kind = "LID";
-      attr->text = text;
-    }*/
-    //else {
-      attr->kind = text;
-      attr->text = "";
-      //}
-  }
-  
+void zzcr_attr(Attrib *attr, int type, char *text) {
+  attr->kind = text;
+  attr->text = "";
+}
+
 // function to create a new AST node
-  AST* createASTnode(Attrib* attr, int type, char* text) {
-    AST* as = new AST;
-    as->kind = attr->kind;
-    as->text = attr->text;
-    as->right = NULL;
-    as->down = NULL;
-    return as;
-  }
-  
+AST* createASTnode(Attrib* attr, int type, char* text) {
+  AST* as = new AST;
+  as->kind = attr->kind;
+  as->text = attr->text;
+  as->right = NULL;
+  as->down = NULL;
+  return as;
+}
+
 /// get nth child of a tree. Count starts at 0.
-  /// if no such child, returns NULL
-  AST* child(AST *a,int n) {
-    AST *c=a->down;
-    for (int i=0; c!=NULL && i<n; i++) c=c->right;
-    return c;
-  }
-  
+/// if no such child, returns NULL
+AST* child(AST *a,int n) {
+  AST *c=a->down;
+  for (int i=0; c!=NULL && i<n; i++) c=c->right;
+  return c;
+}
+
 /// print AST, recursively, with indentation
-  void ASTPrintIndent(AST *a,string s)
-  {
-    if (a==NULL) return;
-    
+void ASTPrintIndent(AST *a,string s)
+{
+  if (a==NULL) return;
+  
   cout<<a->kind;
-    if (a->text!="") cout<<"("<<a->text<<")";
-    cout<<endl;
-    
+  if (a->text!="") cout<<"("<<a->text<<")";
+  cout<<endl;
+  
   AST *i = a->down;
-    while (i!=NULL && i->right!=NULL) {
-      cout<<s+"  \\__";
-      ASTPrintIndent(i,s+"  |"+string(i->kind.size()+i->text.size(),' '));
-      i=i->right;
-    }
-    
+  while (i!=NULL && i->right!=NULL) {
+    cout<<s+"  \\__";
+    ASTPrintIndent(i,s+"  |"+string(i->kind.size()+i->text.size(),' '));
+    i=i->right;
+  }
+  
   if (i!=NULL) {
-      cout<<s+"  \\__";
-      ASTPrintIndent(i,s+"   "+string(i->kind.size()+i->text.size(),' '));
-      i=i->right;
-    }
+    cout<<s+"  \\__";
+    ASTPrintIndent(i,s+"   "+string(i->kind.size()+i->text.size(),' '));
+    i=i->right;
   }
-  
+}
+
 /// print AST
-  void ASTPrint(AST *a)
-  {
-    while (a!=NULL) {
-      cout<<" ";
-      ASTPrintIndent(a,"");
-      a=a->right;
-    }
+void ASTPrint(AST *a)
+{
+  while (a!=NULL) {
+    cout<<" ";
+    ASTPrintIndent(a,"");
+    a=a->right;
   }
-  
+}
+
 AST* createASTlist(AST* childs) {
-    AST* as = new AST;
-    as->kind = "list";
-    //as->text = "list";
-    as->right = NULL;
-    as->down = childs;
-    return as;
-  }
-  
+  AST* as = new AST;
+  as->kind = "list";
+  //as->text = "list";
+  as->right = NULL;
+  as->down = childs;
+  return as;
+}
+
 void appendHetLists(hetList& result, hetList& A, hetList& B) {
-    result = A;
-    for (auto el : B) result.push_back(el);
-  }
-  
+  result = A;
+  for (auto el : B) result.push_back(el);
+}
+
 void popHetList(hetList& l) {
-    if (!l.empty()) l.pop_front();
-  }
-  
+  if (!l.empty()) l.pop_front();
+}
+
 void flattenHetList (hetList& l) {
-    hetList flatList;
-    for (auto el: l) {
-      if (el.isNum) flatList.push_back(el);
-      else {
-        hetList newL = el.llista;
-        flattenHetList(newL);
-        appendHetLists(flatList, flatList, newL);
-      }
+  hetList flatList;
+  for (auto el: l) {
+    if (el.isNum) flatList.push_back(el);
+    else {
+      hetList newL = el.llista;
+      flattenHetList(newL);
+      appendHetLists(flatList, flatList, newL);
     }
-    l = flatList;
   }
-  
+  l = flatList;
+}
+
 int reduceHetList(string op, hetList& l) {
-    int result = 0;
-    if (op == "+") {
-      for (auto el: l) {
-        if (el.isNum) result += el.num;
-        else result += reduceHetList(op, el.llista);
-      }
+  int result = 0;
+  if (op == "+") {
+    for (auto el: l) {
+      if (el.isNum) result += el.num;
+      else result += reduceHetList(op, el.llista);
     }
-    else if (op == "-") {
-      for (auto el: l) {
-        if (el.isNum) result -= el.num;
-        else result *= reduceHetList(op, el.llista);
-      }
-    }
-    else if (op == "*") {
-      for (auto el: l) {
-        if (el.isNum) result *= el.num;
-        else result *= reduceHetList(op, el.llista);
-      }
-    }
-    return result;
   }
-  
+  else if (op == "-") {
+    for (auto el: l) {
+      if (el.isNum) result -= el.num;
+      else result *= reduceHetList(op, el.llista);
+    }
+  }
+  else if (op == "*") {
+    for (auto el: l) {
+      if (el.isNum) result *= el.num;
+      else result *= reduceHetList(op, el.llista);
+    }
+  }
+  return result;
+}
+
 void mapHetList(hetList& res, string op, int n, hetList& llista) {
-    res = llista;
-    hetIter it;
-    for (it = res.begin(); it != res.end(); it++) {
-      if ((*it).isNum) {
-        //NUM//
-        if (op == "+") (*it).num += n;
-        else if (op == "-") (*it).num -= n;
-        else if (op == "*") (*it).num *= n;
-      }
-      else mapHetList((*it).llista, op, n, (*it).llista);
+  res = llista;
+  hetIter it;
+  for (it = res.begin(); it != res.end(); it++) {
+    if ((*it).isNum) {
+      //NUM//
+      if (op == "+") (*it).num += n;
+      else if (op == "-") (*it).num -= n;
+      else if (op == "*") (*it).num *= n;
     }
+    else mapHetList((*it).llista, op, n, (*it).llista);
   }
-  
+}
+
 void filterHetList(hetList& res, string binOp, int n, hetList& l) {
-    hetIter it;
-    for (it = l.begin(); it != l.end(); it++) {
-      //cout << (*(res.end()-1)).num << endl;
-      if ((*it).isNum) {
-        if (binOp == "!=") {
-          if ((*it).num != n) res.push_back((*it));
-        }
-        else if (binOp == "==") {
-          if ((*it).num == n) res.push_back((*it));
-        }
-        else if (binOp == ">") {
-          if ((*it).num > n) res.push_back((*it));
-        }
-        else if (binOp == "<") {
-          if ((*it).num < n) res.push_back((*it));
-        }
+  hetIter it;
+  for (it = l.begin(); it != l.end(); it++) {
+    if ((*it).isNum) {
+      if (binOp == "!=") {
+        if ((*it).num != n) res.push_back((*it));
       }
-      else {
-        hetList insideList;
-        filterHetList(insideList, binOp, n, (*it).llista);
-        res.push_back(initElem(-1, insideList, false));
+      else if (binOp == "==") {
+        if ((*it).num == n) res.push_back((*it));
+      }
+      else if (binOp == ">") {
+        if ((*it).num > n) res.push_back((*it));
+      }
+      else if (binOp == "<") {
+        if ((*it).num < n) res.push_back((*it));
       }
     }
+    else {
+      hetList insideList;
+      filterHetList(insideList, binOp, n, (*it).llista);
+      res.push_back(initElem(-1, insideList, false));
+    }
   }
-  
+}
+
 bool isEmptyHetList(hetList& l) {
-    return l.empty();
-    //Versio per comprovar si hi ha numeros
-    /*if (l.empty()) return true;
-    else {
-      hetIter it;
-      bool aux = true;
-      for (it = l.begin(); it != l.end(); it++) {
-        if ((*it).isNum) return false;
-        else {
-          aux = isEmptyHetList((*it).llista);
-          if (!aux) return false;
-        }
+  return l.empty();
+  //Versio per comprovar si hi ha numeros
+  /*if (l.empty()) return true;
+  else {
+    hetIter it;
+    bool aux = true;
+    for (it = l.begin(); it != l.end(); it++) {
+      if ((*it).isNum) return false;
+      else {
+        aux = isEmptyHetList((*it).llista);
+        if (!aux) return false;
       }
     }
-    return true;*/
   }
-  
+  return true;*/
+}
+
 hetList evaluateList(AST *a) {
-    hetList llista;
-    if (a == NULL) return llista;
-    //cout << "OP : " << a->kind << endl;
-    if (a->kind == "[") {
-      int i = 0;
-      while (child(a,i) != NULL) {
-        ElemList el;
-        if (child(a,i)->kind != "[") {
-          //Numero//
-          el = initElem(stoi(child(a,i)->kind), llista, true);
-        }
-        else if (child(a,i)->kind == "[") {
-          //Llista//
-          hetList insideList = evaluateList(child(a,i));
-          el = initElem(-1, insideList, false);
-        }
-        llista.push_back(el);
-        ++i;
+  hetList llista;
+  if (a == NULL) return llista;
+  if (a->kind == "[") {
+    int i = 0;
+    while (child(a,i) != NULL) {
+      ElemList el;
+      if (child(a,i)->kind != "[") {
+        //Numero//
+        el = initElem(stoi(child(a,i)->kind), llista, true);
       }
-    }
-    else if (a->kind == "#") {
-      //Concat//
-      hetList firstList = evaluateList(child(a,0));
-      hetList secondList = evaluateList(child(a,1));
-      appendHetLists(llista, firstList, secondList);
-      return llista;
-    }
-    else if (a->kind == "lreduce") {
-      int res = reduceHetList(child(a,0)->kind, m[child(a,1)->kind]);
-      ElemList el = initElem(res, llista, true);
+      else if (child(a,i)->kind == "[") {
+        //Llista//
+        hetList insideList = evaluateList(child(a,i));
+        el = initElem(-1, insideList, false);
+      }
       llista.push_back(el);
+      ++i;
     }
-    else if (a->kind == "lmap") {
-      mapHetList(llista, child(a,0)->kind, stoi(child(a,1)->kind), m[child(a,2)->kind]);
-      return llista;
-    }
-    else if (a->kind == "lfilter") {
-      filterHetList(llista, child(a,0)->kind, stoi(child(child(a,0),0)->kind), m[child(a,1)->kind]);
-      return llista;
-    }
-    else {
-      //Ident//
-      llista = m[a->kind];
-      return llista;
-    }
+  }
+  else if (a->kind == "#") {
+    //Concat//
+    hetList firstList = evaluateList(child(a,0));
+    hetList secondList = evaluateList(child(a,1));
+    appendHetLists(llista, firstList, secondList);
     return llista;
   }
-  
+  else if (a->kind == "lreduce") {
+    int res = reduceHetList(child(a,0)->kind, m[child(a,1)->kind]);
+    ElemList el = initElem(res, llista, true);
+    llista.push_back(el);
+  }
+  else if (a->kind == "lmap") {
+    mapHetList(llista, child(a,0)->kind, stoi(child(a,1)->kind), m[child(a,2)->kind]);
+    return llista;
+  }
+  else if (a->kind == "lfilter") {
+    filterHetList(llista, child(a,0)->kind, stoi(child(child(a,0),0)->kind), m[child(a,1)->kind]);
+    return llista;
+  }
+  else {
+    //Ident//
+    llista = m[a->kind];
+    return llista;
+  }
+  return llista;
+}
+
 bool compareHetLists(string op, hetList& A, hetList& B) {
-    //Pre: flattened lists
-    if (op == "==") if (A.size() != B.size()) return false;
-    hetIter it1, it2;
-    it1 = A.begin();
-    it2 = B.begin();
-    while (it1 != A.end() or it2 != B.end()){
-      if (op == "==") if((*it1).num != (*it2).num) return false;
-      if (op == ">") {
-        if (it1 == A.end() and it2 != B.end()) return false;
-        if (it1 != A.end() and it2 == B.end()) return true;
-        if ((*it1).num < (*it2).num) return false;
-        else if ((*it1).num > (*it2).num) return true;
-      }
-      if (op == "<") {
-        if (it1 == A.end() and it2 != B.end()) return true;
-        if (it1 != A.end() and it2 == B.end()) return false;
-        if ((*it1).num < (*it2).num) return true;
-        else if ((*it1).num > (*it2).num) return false;
-      }
-      it1++;
-      it2++;
+  //Pre: flattened lists
+  if (op == "==") if (A.size() != B.size()) return false;
+  hetIter it1, it2;
+  it1 = A.begin();
+  it2 = B.begin();
+  while (it1 != A.end() or it2 != B.end()){
+    if (op == "==") if((*it1).num != (*it2).num) return false;
+    if (op == ">") {
+      if (it1 == A.end() and it2 != B.end()) return false;
+      if (it1 != A.end() and it2 == B.end()) return true;
+      if ((*it1).num < (*it2).num) return false;
+      else if ((*it1).num > (*it2).num) return true;
     }
-    return false;
+    if (op == "<") {
+      if (it1 == A.end() and it2 != B.end()) return true;
+      if (it1 != A.end() and it2 == B.end()) return false;
+      if ((*it1).num < (*it2).num) return true;
+      else if ((*it1).num > (*it2).num) return false;
+    }
+    it1++;
+    it2++;
   }
-  
+  return false;
+}
+
 bool checkBooleanExpr(AST *a) {
-    bool aux = false;
-    string op = a->kind;
-    if (op == "and") aux = (checkBooleanExpr(child(a,0))) and (checkBooleanExpr(child(a,1)));
-    else if (op == "or") aux = (checkBooleanExpr(child(a,0))) or (checkBooleanExpr(child(a,1)));
-    else if (op == "not") aux = !(checkBooleanExpr(child(a,0)));
-    else if (op == "empty") aux = isEmptyHetList(m[child(a,0)->kind]);
-    else if (op == ">") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
-    else if (op == "<") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
-    else if (op == ">=") aux = !compareHetLists("<", m[child(a,0)->kind], m[child(a,1)->kind]);
-    else if (op == "<=") aux = !compareHetLists(">", m[child(a,0)->kind], m[child(a,1)->kind]);
-    else if (op == "==") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
-    else if (op == "!=") aux = !compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
-    return aux;
-  }
-  
+  bool aux = false;
+  string op = a->kind;
+  if (op == "and") aux = (checkBooleanExpr(child(a,0))) and (checkBooleanExpr(child(a,1)));
+  else if (op == "or") aux = (checkBooleanExpr(child(a,0))) or (checkBooleanExpr(child(a,1)));
+  else if (op == "not") aux = !(checkBooleanExpr(child(a,0)));
+  else if (op == "empty") aux = isEmptyHetList(m[child(a,0)->kind]);
+  else if (op == ">") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+  else if (op == "<") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+  else if (op == ">=") aux = !compareHetLists("<", m[child(a,0)->kind], m[child(a,1)->kind]);
+  else if (op == "<=") aux = !compareHetLists(">", m[child(a,0)->kind], m[child(a,1)->kind]);
+  else if (op == "==") aux = compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+  else if (op == "!=") aux = !compareHetLists(op, m[child(a,0)->kind], m[child(a,1)->kind]);
+  return aux;
+}
+
 void execute(AST *a) {
-    if (a == NULL) return;
-    else if (a->kind == "=") {
-      m[child(a,0)->kind] = evaluateList(child(a,1));
-    }
-    else if (a->kind == "print") {
-      if (child(a,0)->kind == "head") printHeadHetList(m[child(child(a,0),0)->kind]);
-      else {
-        //cout << child(a,0)->kind << " = ";
-        printHetList(m[child(a,0)->kind]);
-        cout << endl;
-      }
-    }
-    else if (a->kind == "pop") {
-      popHetList(m[child(a,0)->kind]);
-    }
-    else if (a->kind == "flatten") {
-      flattenHetList(m[child(a,0)->kind]);
-    }
-    else if (a->kind == "if") {
-      bool bExpr = checkBooleanExpr(child(a,0));
-      if (bExpr) execute(child(a,1)->down);
-    }
-    else if (a->kind == "while") {
-      bool bExpr = checkBooleanExpr(child(a,0));
-      AST *b = child(a,1)->down;
-      while (bExpr) {
-        execute(b);
-        bExpr = checkBooleanExpr(child(a,0));
-      }
-    }
-    else cout << "nope" << endl;
-    execute(a->right);
+  if (a == NULL) return;
+  else if (a->kind == "=") {
+    m[child(a,0)->kind] = evaluateList(child(a,1));
   }
-  
+  else if (a->kind == "print") {
+    if (child(a,0)->kind == "head") printHeadHetList(m[child(child(a,0),0)->kind]);
+    else {
+      //cout << child(a,0)->kind << " = ";
+      printHetList(m[child(a,0)->kind]);
+      cout << endl;
+    }
+  }
+  else if (a->kind == "pop") {
+    popHetList(m[child(a,0)->kind]);
+  }
+  else if (a->kind == "flatten") {
+    flattenHetList(m[child(a,0)->kind]);
+  }
+  else if (a->kind == "if") {
+    bool bExpr = checkBooleanExpr(child(a,0));
+    if (bExpr) execute(child(a,1)->down);
+  }
+  else if (a->kind == "while") {
+    bool bExpr = checkBooleanExpr(child(a,0));
+    AST *b = child(a,1)->down;
+    while (bExpr) {
+      execute(b);
+      bExpr = checkBooleanExpr(child(a,0));
+    }
+  }
+  else cout << "nope" << endl;
+  execute(a->right);
+}
+
 int main() {
-    AST *root = NULL;
-    ANTLR(lists(&root), stdin);
-    ASTPrint(root);
-    execute(root->down);
-  }
-  
+  AST *root = NULL;
+  ANTLR(lists(&root), stdin);
+  ASTPrint(root);
+  execute(root->down);
+}
+
   
 
 void

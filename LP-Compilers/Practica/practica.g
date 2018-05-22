@@ -52,7 +52,7 @@ void printHetList (hetList& llista) {
     for (it = llista.begin(); it != llista.end(); it++) {
         if (!(*it).isNum) printHetList(((*it).llista));
         else cout << (*it).num;
-        if (i < llista.size()-1) cout << ", ";
+        if (i < llista.size()-1) cout << ",";
         i++;
     }
     cout << "]";

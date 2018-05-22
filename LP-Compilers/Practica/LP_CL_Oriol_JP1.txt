@@ -1,0 +1,74 @@
+L = []
+L2 = []
+print L2
+flatten L2
+print L2
+flatten L
+flatten L2
+print L2
+print L2
+print L
+L2 = [1,2,3]
+print L2
+flatten L2
+print L2
+print L
+L = L#L
+print L
+L = [1,2,3,4]
+print L
+L0 = []
+L3 = L0#L
+print L3
+L3 = L2#L
+print L3
+L3 = L3#L
+print L3
+L4 = [[[1,2],3],4]
+print L4
+flatten L4
+print L4
+flatten L4
+print L4
+L5 = [[[[10], [9, 8, 7], [6, [5]]], 4, [[[[[3]]], 2]]], 1]
+print L5
+L2 = L#L5
+print L2
+flatten L2
+print L2
+flatten L2
+print L2
+L6 = L0#L5
+print L6
+L6 = L6#L6
+L7 = lreduce + L6
+print L7
+L6 = L7#L6
+print L6
+pop(L6)
+if(L7 == L6) then
+flatten L6
+endif
+L6 = lmap * 2 L5
+print L5
+print L6
+L8 = lmap * 2 L7
+print L8
+L9 = lfilter != 2 L7
+L10 = lfilter != 3 L5
+L11 = [1]
+print L11
+L12 = L11#L9
+print L12
+L12 = L12#L10
+print L12
+while(not empty(L2)) do
+print head(L2)
+pop(L2)
+flatten L3
+while(empty(L0) and not empty(L3)) do
+print L3
+L3 = L0#L0
+endwhile
+L3 = L0#L2
+endwhile

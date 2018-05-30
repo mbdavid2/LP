@@ -1,8 +1,14 @@
 import pickle
+import util
+import ast
 import urllib.request
 from bs4 import BeautifulSoup
 
+## Keep track of already visited URLs
 visitedURLs = []
+
+## Database
+db = []
 
 #############################################################################
 # Common part
@@ -11,7 +17,7 @@ visitedURLs = []
 
 def authors():
     """Returns a string with the name of the authors of the work."""
-    return "David Moreno Borràs"
+    return "David Moreno"
 
 
 
@@ -23,18 +29,19 @@ def authors():
 def store(db, filename):
     with open(filename, "wb") as f:
         print("store", filename)
+        #print(db)
         pickle.dump(db, f)
         print("done")
 
-def getLink(url):
-    response = urllib.request.urlopen(url)
-    page = response.read()
-    soup = BeautifulSoup(page, "html.parser")
-    ## print(soup.title.text)
-    ## print(soup.get_text())
+def getLinks(url, soup):
+    """
+        Returns a list of urls
+    """
     listURLs = []
     newUrl = list(url)
     urlLen = len(newUrl)-1
+
+    # urllib.parse.urljoin not workingu :/
     for i in range(0, urlLen):
         j = urlLen - i
         if (newUrl[j] != '/'):
@@ -53,15 +60,22 @@ def crawler(url, maxdist):
         following up to maxdist links
         and returns the built database.
     """
-    print("Holita: ", url)
+    try:
+        response = urllib.request.urlopen(url)
+        page = response.read()
+        soup = BeautifulSoup(page, "html.parser")
+    except Exception:
+        print("Crawling: Invalid URL")
+
     visitedURLs.append(url)
-    if maxdist <= 0:
+    db.append((url,util.clean_words(soup.title.text)))
+    if url == None or maxdist <= 0:
         return None
-    listURLs = getLink(url)
+    listURLs = getLinks(url, soup)
     for urlChild in listURLs:
         if not urlChild in visitedURLs:
             crawler(urlChild, maxdist-1)
-    return None
+    return db
 
 
 
@@ -82,10 +96,34 @@ def load(filename):
 def answer(db, query):
     """
         Returns a list of pages for the given query (a string).
-
         Each page is a tuple with two fields: the title and the URL.
     """
+    queryPy = ast.literal_eval(query)
+    # print("Query:",queryPy)
+    # print("Database:",db)
+    ans = []
+    # This could be a parameter for checkURL but
+    # it's global so the map is more readable
+    global currentSoup
+    for url,name in db:
+        try:
+            response = urllib.request.urlopen(url)
+            page = response.read()
+            currentSoup = BeautifulSoup(page, "html.parser")
+        except Exception:
+            print("Answer: Invalid URL")
+        if checkURL(queryPy):
+            ans.append((name,url))
+    return ans
 
-    ### Please implement this function as efficiently as possible
-
-    return []
+def checkURL(query):
+    typeQ = str(type(query))
+    if typeQ == "<class \'list\'>":
+        return any (map (checkURL, query))
+    elif typeQ == "<class \'tuple\'>":
+        a,b = query
+        return checkURL(a) and checkURL(b)
+    else:
+        #print("Currenttly exploring:", currentSoup.title.text, "Trying to find:", query)
+        text = currentSoup.get_text()
+        return query in text

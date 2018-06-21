@@ -4,11 +4,11 @@ import ast
 import urllib.request
 from bs4 import BeautifulSoup
 
-## Keep track of already visited URLs
+# Keep track of already visited URLs
 visitedURLs = []
 
-## Database
-db = []
+# Database, Map: word -> [(link, name)]
+db = {}
 
 #############################################################################
 # Common part
@@ -19,8 +19,6 @@ def authors():
     """Returns a string with the name of the authors of the work."""
     return "David Moreno"
 
-
-
 #############################################################################
 # Crawler
 #############################################################################
@@ -30,21 +28,30 @@ def store(db, filename):
     try:
         with open(filename, "wb") as f:
             print("store", filename)
-            # print(db)
             pickle.dump(db, f)
             print("done")
     except Exception:
         print("Couldn't store the database")
 
+
 def getLinks(url, soup):
     """
         Returns a list of urls
     """
+    currentWords = []
     listURLs = []
+    wordsInPage = soup.get_text()
+    for word in wordsInPage.split():
+        currentWords.append(word)
+        if word not in db:
+            db[word] = [(util.clean_words(soup.title.text), url)]
+        elif word not in currentWords:
+                db[word].append((util.clean_words(soup.title.text), url))
     for link in soup.find_all("a"):
         newUrl = urllib.parse.urljoin(url, link.get("href"))
         listURLs.append(newUrl)
     return listURLs
+
 
 def crawler(url, maxdist):
     """
@@ -53,22 +60,21 @@ def crawler(url, maxdist):
         and returns the built database.
     """
     try:
-        response = urllib.request.urlopen(url)
-        page = response.read()
-        soup = BeautifulSoup(page, "html.parser")
-        visitedURLs.append(url)
-        db.append((url,util.clean_words(soup.title.text)))
-        if url == None or maxdist <= 0:
-            return None
-        listURLs = getLinks(url, soup)
-        for urlChild in listURLs:
-            if not urlChild in visitedURLs:
+        if url not in visitedURLs:
+            visitedURLs.append(url)
+            response = urllib.request.urlopen(url)
+            page = response.read()
+            soup = BeautifulSoup(page, "html.parser")
+            if url is None or maxdist <= 0:
+                return None
+            listURLs = getLinks(url, soup)
+            for urlChild in listURLs:
                 crawler(urlChild, maxdist-1)
+        else:
+            return []
     except Exception:
         print("Crawling: Invalid URL", url)
     return db
-
-
 
 #############################################################################
 # Answer
@@ -93,28 +99,31 @@ def answer(db, query):
         Each page is a tuple with two fields: the title and the URL.
     """
     queryPy = ast.literal_eval(query)
-    ans = []
-    # This could be a parameter for checkURL but
-    # it's global so the map is more readable
-    global currentSoup
-    for url,name in db:
-        try:
-            response = urllib.request.urlopen(url)
-            page = response.read()
-            currentSoup = BeautifulSoup(page, "html.parser")
-            if checkURL(queryPy):
-                ans.append((name,url))
-        except Exception:
-            print("Answer: Invalid URL")
+    ans = checkURL(queryPy, db)
     return ans
 
-def checkURL(query):
-    typeQ = str(type(query))
+
+def checkURL(query, db):
     if isinstance(query, list):
-        return any (map (checkURL, query))
+        ans = []
+        for el in query:
+            ans += checkURL(el, db)
+        return ans
     elif isinstance(query, tuple):
-        a,b = query
-        return checkURL(a) and checkURL(b)
+        a, b = query
+        resA = checkURL(a, db)
+        resB = checkURL(b, db)
+        if (resA == [] or resB == []):
+            return []
+        else:
+            return intersection(resA, resB)
     else:
-        text = currentSoup.get_text()
-        return query in text
+        if query in db:
+            return db[query]
+        else:
+            return []
+
+
+def intersection(listA, listB):
+    res = [x for x in listA if x in listB]
+    return res
